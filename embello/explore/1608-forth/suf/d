@@ -1,0 +1,77 @@
+\ load development code
+\ needs l
+
+reset
+led ios!
+
+: +usb ( -- )  \ init USB hardware
+  OMODE-PP PA0 io-mode!  PA0 ios!  1 ms  PA0 ioc!
+  23 bit RCC-APB1ENR bis!  \ USBEN
+  $0001 USB-CNTR h! 10 us $0000 USB-CNTR h!  \ FRES
+;
+
+: -usb ( -- )  \ deinit USB hardware
+  23 bit RCC-APB1ENR bic!  \ USBEN
+  PA0 ios!  \ usb-off HyTiny
+;
+
+: ep-reset-rx# ( ep -- ) 8400 over 3 ep-reg h! 3 rxstat! ;
+
+: setup. ( -- )  \ dump received setup packet
+  ." setup: " $48 $40 do i usb-pma@ h.4 space 2 +loop ;
+
+: ureset ( -- )
+  256 0 do  0 i 2* usb-pma! loop  0 USB-BTABLE h!  usb-init
+  $3210 0 ep-addr h!
+  $0021 1 ep-addr h!
+  $0622 2 ep-addr h!
+  $3003 3 ep-addr h!
+  $80 USB-DADDR h!
+;
+
+: ep-setup ( ep -- )
+  cr setup.
+  $40 usb-pma@ case
+    $0080 of 2 send-zero endof
+    $0680 of send-desc endof
+    $2021 of usb:line 8 send-data endof
+    true ?of 0 send-zero endof
+  endcase
+  dup rxclear ep-reset-rx# send-next
+;
+
+: ep-out ( ep -- )
+  ." :OUT " $100 usb-pma@ h.4 [char] ; emit
+  dup rxclear 3 rxstat!
+;
+
+: ep-in ( ep -- )
+  $40 usb-pma@ $0500 = if $42 usb-pma@ $80 or USB-DADDR h! then
+  ." :IN "
+  dup txclear ep-reset-rx# send-next
+;
+
+: uctr ( istr -- )
+  dup h.4
+  dup $07 and swap $10 and if 
+    dup ep-addr h@ $800 and if ep-setup else ep-out then
+  else ep-in then ;
+
+: ususp ( -- ) %1100 USB-CNTR hbis! ;
+: uwkup ( -- ) %1000 USB-CNTR hbic! ;
+
+: poll
+  begin
+    USB-ISTR h@
+    dup $9C00 and if [char] ! emit then
+    dup $0400 and if [char] R emit ureset   $FBFF USB-ISTR h! then
+    dup $8000 and if [char] C emit dup uctr $7FFF USB-ISTR h! then
+    dup $0800 and if [char] S emit ususp    $F7FF USB-ISTR h! then
+    dup $1000 and if [char] W emit uwkup    $EFFF USB-ISTR h! then
+    drop
+  key? until ;
+
+: t +usb poll usb. usb.mem -usb ;
+: t2 save-to-buf +usb poll usb. usb.mem -usb restore-buf ;
+
+\ vim: set ft=forth :

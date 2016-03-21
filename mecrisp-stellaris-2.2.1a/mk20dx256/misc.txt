@@ -1,0 +1,23 @@
+\ Miscellaneous nuggets
+
+: spaces 0 ?do space loop ;
+: invert  not  inline 1-foldable ;
+
+: count dup c@ ; ( cstr-addr -- cstr-addr count )
+
+: octal 8 base ! ;
+: sqr ( n -- n^2 ) dup * 1-foldable ;
+: star 42 emit ;
+
+: bounds ( addr len -- addr+len addr ) over + swap ;
+
+: erase ( addr # -- ) 0 fill ;
+
+: stop-loop
+   key?
+   if   key $1B =  \ ESC
+   else 0
+   then
+ ;
+
+

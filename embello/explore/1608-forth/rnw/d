@@ -1,0 +1,45 @@
+\ load development code
+\ needs l
+
+reset
+
+: blink ( -- )  \ blink the on-board LED until a key is pressed
+  OMODE-PP LED io-mode!  begin  LED iox!  100 ms  key? until ;
+
+\ print out received packet info until a key is pressed
+\ format: #bytes b3..b0 b7..b4 rssi lna afc
+: rftry ( -- )
+  42 8686 rf-init
+  begin
+    rf-recv  ?dup if
+      cr . rf.buf @ hex. rf.buf 4 + @ hex. rf.rssi @ . rf.lna @ . rf.afc @ .
+    then
+  key? until ;
+
+\ : tftry ( -- ) lcd-init show-logo  1000 ms  lcd-init demo ;
+: tftry ( -- ) tft-init demo ;
+
+: rtctry ( -- )  +i2c  0 0 rtc!  begin  0 rtc@ $FF and .  key? until ;
+: adctry ( -- )  +adc  begin  PB0 adc .  key? until ;
+: uartry ( -- )  +uart uart. ;
+: pwmtry ( -- )  1 LED +pwm 100 LED pwm ;
+
+: txtry ( n - ) 15 rf-power  0 <# #s #> 0 rf-send ;
+
+\ -----------------------------------------------------------------------------
+
+: freq-gen ( freq duty pin -- freq )  \ frequency with duty cycle 10/20/../90%
+\ freq range is 110 Hz .. 7.2 MHz, but steps can be very coarse above 100 KHz
+\ better dividers could be used, but this should be usable in the audio range
+  >r ( freq duty R: pin ) 1 r@ +pwm       \ first set up basic pwm
+  9 r@ p2tim timer-base TIM.ARR + !       \ reload value is 9, i.e. cycle 10
+  10 / 10 swap - r@ pwm                   \ use 1..9, for use with PWM cycle 10
+  7200000 dup rot /                       \ find best divider (may be too low)
+  dup 1- r> p2tim timer-base TIM.PSC + !  \ set pre-scaler accordingly
+  /                                       \ return actual freq (may be higher)
+;
+
+\ 1000 30 PA1 freq-gen .
+
+\ -----------------------------------------------------------------------------
+\ vim: set ft=forth :
