@@ -4,8 +4,8 @@
 import re
 import os
 
-promptString = "ok."
-promptTimeout = 1
+promptStrings = [ "ok.", "Finished. Reset "]
+promptTimeout = 10
 includePattern = "^include\s+([\.\w/-]+)"
 commentPattern = "^\\\s*"
 
@@ -28,7 +28,7 @@ def sendFile(file, level=0):
                 continue
 
             crt.Screen.Send(line)
-            crt.Screen.WaitForString(promptString, promptTimeout)
+            crt.Screen.WaitForStrings(promptStrings, promptTimeout)
 
 def main():
     crt.Screen.Synchronous = True
