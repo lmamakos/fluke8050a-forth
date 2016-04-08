@@ -8,6 +8,7 @@ compiletoflash
 ( code-start, see code-size below ) here
 
 include ../mlib/multi.fs
+include ../mlib/disassembler-m3.txt
 
 ( code-size ) here swap - .
 cornerstone <<<lib-dad>>>
