@@ -211,9 +211,9 @@ ILI9341_TFTHEIGHT variable ili9341_height
 
 : goxy ( x y -- )
     over    ( x y x -- )
-    1+      ( x y x+1 -- )
+\    1+      ( x y x+1 -- )
     over    ( x y x+1 y -- )
-    1+      ( x y x+1 y+1 -- )
+\    1+      ( x y x+1 y+1 -- )
     setwindow
 ;
 
@@ -235,6 +235,38 @@ ILI9341_TFTHEIGHT variable ili9341_height
 
 \ clear, putpixel, and display are used by the graphics.fs code
 
+: raster ( addr xsize ysize x y -- )
+    \ yeah, this is so much easier than having local variables
+    3 pick ( addr xsize ysize x y -- addr xsize ysize x y xsize )
+    2 pick ( addr xsize ysize x y xsize -- )
+    + 1-   ( addr xsize ysize x y x1 )
+    over   ( addr xsize ysize x y x1 y )
+    4 pick ( addr xsize ysize x y x1 y ysize )
+    + 1-   ( addr xsize ysize x y x1 y1 )
+    setwindow ( addr xsize ysize x0 y0 x1 y1 -- addr xsize ysize )
+    *      ( addr #bits )
+    +spi
+    
+    \ now, iterate over all the bits and write each pixel value out, including
+    \ both the foreground and background pixels
+    
+    \ xxx need to scale #bits to words or change loop to bits?  probably
+    \ carry xsize and ysize along and handle partial bytes in rows.
+    32 /
+    0 do ( addr #bits 0 -- addr )
+	32 0 do
+	    i $1f xor bit over bit@ if
+		." fg "
+	    else
+		." bg "
+	    then
+	    \ @ h>tft
+	loop
+	4 +
+    loop drop
+    -spi
+;
+    
 : clear
     0 0 ili9341_width @ 1- ili9341_height @ 1- setwindow
     tft-bg @
