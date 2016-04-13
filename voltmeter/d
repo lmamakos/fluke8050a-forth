@@ -15,7 +15,7 @@ include ../mlib/graphics.fs
 
 \ -----------------------------------------------------------------------------
 
-: showdigit ( n x -- )
+: old-showdigit ( n x -- )
   swap 256 * digits + 64 0 do
     32 0 do
       i $1F xor bit over bit@ if over i + j putpixel then
@@ -23,13 +23,19 @@ include ../mlib/graphics.fs
     4 +
   loop 2drop ;
 
+: showdigit ( n x -- )
+  >r
+  256 * digits +
+  32 64 r> 8 + 0 raster
+  ;
+
 : showdot ( x -- )
   64 60 do
     dup 4 + over 1+ do i j putpixel loop
   loop drop ;
 
 : shownum ( u -- )
-  clear
+  \ clear
   10 /mod 10 /mod 10 /mod
   -4 showdigit 28 showdigit 60 showdot 64 showdigit 96 showdigit
   display ;
@@ -51,5 +57,12 @@ include ../mlib/graphics.fs
     100,0 f* abs shownum drop      \ and on the OLED display
     500 ms                         \ slow down
   key? until ;
+
+: looper
+32000 0 do
+  i shownum
+  key? if leave then
+  led iox!
+loop ;
 
 \ vim: set ft=forth :

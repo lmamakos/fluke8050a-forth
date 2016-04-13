@@ -96,25 +96,27 @@ PA3  constant TFT-D/C  \ register select
 \ PA7 constant TFT-DI  \ data into LCD (SPI1)
 
 : >tft ( u -- )
-  dup $100 and TFT-D/C io!  +spi >spi -spi  TFT-D/C ios! ;
+  dup $100 and TFT-D/C io!  +spi >spi -spi  TFT-D/C ios! ; inline
 
 : tft-cmd ( u -- )
     TFT-D/C ioc!   \ D/CX low - command
     +spi           \ SSEL
     >spi
     -spi           \ unselect SSL
-    TFT-D/C ios! ; \ D/CX high - data
+    TFT-D/C ios!  \ D/CX high - data
+  ; inline
 
 : tft-data ( u -- )
     TFT-D/C ios!   \ D/CX low - command
     +spi           \ SSEL
     >spi
     -spi           \ unselect SSL
-    TFT-D/C ios! ; \ D/CX high - data
+    TFT-D/C ios!   \ D/CX high - data
+ ; inline
     
 : h>tft ( u -- )
   \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
-  dup 8 rshift >spi  >spi ;
+  dup 8 rshift >spi  >spi ; inline
 
 BLACK variable tft-bg
 RED   variable tft-fg
@@ -185,10 +187,9 @@ ILI9341_TFTHEIGHT variable ili9341_height
 	endof
     endcase  ;
 
-: setwindow  ( x0 y0 x1 y1 -- )
-                                      \  ( x0 y0 x1 y1 -- )
-    >r                                \  ( x0 y0 x1 -- ) (R: y1 -- )
-    swap                              \  ( x0 x1 y0 -- ) (R: y1 -- )
+: setwindow                           \  ( x0 y0 x1 y1 -- )
+    >r                                \  ( x0 y0 x1 -- )    (R: y1 -- )
+    swap                              \  ( x0 x1 y0 -- )    (R: y1 -- )
     r>                                \  ( x0 x1 y0 y1 -- ) (R: -- )
     2swap                             \  ( y0 y1 x0 x1 -- )
 
@@ -209,29 +210,6 @@ ILI9341_TFTHEIGHT variable ili9341_height
     ILI9341_RAMWR tft-cmd             \ write to ram.. and now something should emit pixel data next
 ;
 
-: goxy ( x y -- )
-    over    ( x y x -- )
-\    1+      ( x y x+1 -- )
-    over    ( x y x+1 y -- )
-\    1+      ( x y x+1 y+1 -- )
-    setwindow
-;
-
-\ : old-goxy ( x y -- )
-\    $2A >tft   \ CASET
-\    $100 >tft
-\    $102 + >tft
-\    $100 >tft
-\    $181 >tft
-\    
-\    $2B >tft    \ PASET
-\    $100 >tft
-\    $101 + >tft
-\    $100 >tft
-\    $180 >tft
-\    
-\    $2C >tft    \ RAMWR
-\ ;
 
 \ clear, putpixel, and display are used by the graphics.fs code
 
@@ -256,11 +234,11 @@ ILI9341_TFTHEIGHT variable ili9341_height
     0 do ( addr #bits 0 -- addr )
 	32 0 do
 	    i $1f xor bit over bit@ if
-		." fg "
+		tft-fg @
 	    else
-		." bg "
+		tft-bg @
 	    then
-	    \ @ h>tft
+	    h>tft
 	loop
 	4 +
     loop drop
@@ -279,6 +257,10 @@ ILI9341_TFTHEIGHT variable ili9341_height
 ;
     
 : putpixel ( x y -- )  \ set a pixel in display memory
-  goxy  tft-fg @ +spi h>tft -spi ;
+  over  ( x y x -- )
+  over  ( x y x y -- )
+  setwindow
+  tft-fg @ +spi h>tft -spi ;
 
 : display ( -- ) ;  \ update tft from display memory (ignored)
+
