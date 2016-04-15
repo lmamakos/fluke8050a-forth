@@ -207,15 +207,20 @@ decimal
 
 0 variable font-x   0 variable font-y
 
-: drawbytepattern ( c -- )
-  8 0 do dup 128 and if font-x @ font-y @ putpixel then shl 1 font-x +! loop
-  drop -8 font-x +!
-;
+\ : drawbytepattern ( c -- )
+\   8 0 do dup 128 and if font-x @ font-y @ putpixel then shl 1 font-x +! loop
+\   drop -8 font-x +!
+\ ;
 
 : drawcharacterbitmap ( c-addr -- )
-  8 0 do dup c@ drawbytepattern 1 font-y +! 1+ loop
-  drop -8 font-y +! 8 font-x +!
+  8  8  font-x @  font-y @ ( c-addr xsize ysize x y ) raster
+  8 font-x +! 
 ;
+
+\ : drawcharacterbitmap ( c-addr -- )
+\   8 0 do dup c@ drawbytepattern 1 font-y +! 1+ loop
+\   drop -8 font-y +! 8 font-x +!
+\ ;
 
 : get-first-char ( addr len -- addr   len c ) over c@ ;
 : cut-first-char ( addr len -- addr+1 len-1 ) 1- swap 1+ swap ;
@@ -243,5 +248,11 @@ decimal
   2 14 12 34 line display
   4 14 14 34 line display
 ;
+
+: foo 
+  300 0 do 
+  s" foo bar" 10 i drawstring display
+  20 +loop 
+; 
 
 \ initlcd demo

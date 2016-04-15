@@ -11,17 +11,9 @@
 \ stuff to move to 'l' when stable
 
 include tft-ili9341.fs
-include ../mlib/graphics.fs
+include graphics.fs
 
 \ -----------------------------------------------------------------------------
-
-: old-showdigit ( n x -- )
-  swap 256 * digits + 64 0 do
-    32 0 do
-      i $1F xor bit over bit@ if over i + j putpixel then
-    loop
-    4 +
-  loop 2drop ;
 
 : showdigit ( n x -- )
   >r
