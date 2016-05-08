@@ -1,0 +1,98 @@
+\ load development code
+\ needs l
+
+\ reset
+
+: blink ( -- )  \ blink the on-board LED until a key is pressed
+  OMODE-PP LED io-mode!  begin  LED iox!  100 ms  key? until ;
+
+: rtctry ( -- )  +rtc  0 0 rtc!  begin  0 rtc@ $FF and .  key? until ;
+: adctry ( -- )  +adc  begin  PB0 adc .  key? until ;
+: uartry ( -- )  +uart uart. ;
+
+
+\ -----------------------------------------------------------------------------
+\ PSRAM on HY-STM32F1xxCore144 Core/Dev Board
+
+$A0000008 constant FSMC-BCR2
+$A000000C constant FSMC-BTR2
+
+: psram-pins ( -- )
+  8 bit RCC-AHBENR bis!  \ enable FSMC clock
+  OMODE-AF-PP OMODE-FAST + dup PD0 %1111111100110011 io-modes!
+                           dup PE0 %1111111111111011 io-modes!
+                           dup PF0 %1111000000111111 io-modes!
+                               PG0 %0000001000111111 io-modes! ;
+
+: psram-fsmc ( -- )
+  $80               \ keep reset value
+\                   \ FSMC_DataAddressMux_Disable
+  %01 2 lshift or   \ FSMC_MemoryType_PSRAM
+  %01 4 lshift or   \ FSMC_MemoryDataWidth_16b
+\                   \ FSMC_BurstAccessMode_Disable
+\                   \ FSMC_WaitSignalPolarity_Low
+\                   \ FSMC_WrapMode_Disable
+\                   \ FSMC_WaitSignalActive_BeforeWaitState
+  1 12 lshift or    \ FSMC_WriteOperation_Enable
+\                   \ FSMC_WaitSignal_Disable
+\                   \ FSMC_AsynchronousWait_Disable
+\                   \ FSMC_ExtendedMode_Disable
+\                   \ FSMC_WriteBurst_Disable
+  FSMC-BCR2 !
+
+\ for 72 MHz, i.e. 13.89 ns per clock cycle
+\ assuming address setup > 70 ns and data setup > 20 ns + 1 cycle
+\ started with addr/data/turn as 5/2/1, but even 1/1/0 seems to work fine...
+
+  0
+   15 0 lshift or     \ FSMC_AddressSetupTime = 6
+                    \ FSMC_AddressHoldTime = 0
+  127 8 lshift or     \ FSMC_DataSetupTime = 3
+   15 16 lshift or    \ FSMC_BusTurnAroundDuration = 2
+                    \ FSMC_CLKDivision = 0x00
+                    \ FSMC_DataLatency = 0x00
+                    \ FSMC_AccessMode_A
+  FSMC-BTR2 !
+
+  1 FSMC-BCR2 bis!  \ MBKEN:Memorybankenablebit
+;
+
+$64000000 constant PSRAM
+
+123456789 variable seed
+
+: random ( -- u ) seed @ dup ror or seed @ rol xor dup seed ! ;
+
+: r 0 do random hex. loop ;
+
+: psram-test ( u -- )  \ test first N bytes of PSRAM, original data is lost
+  psram-init
+  $12345678 seed !
+  dup 0 do
+    random PSRAM i + !  \ fill it with random values
+  4 +loop
+  PSRAM $40 dump
+  $12345678 seed !
+  0 do
+    random PSRAM i + @  \ now read those values back and compare
+    <> if i . ." FAILED!" quit then
+  4 +loop ;
+
+: psram-full ( -- )  \ test entire 8 MB PSRAM, then clear its contents
+  23 bit  dup psram-test  PSRAM swap 0 fill ;
+
+: psram-time ( -- )  \ measure read and write times for a full scan
+   psram-init
+   micros  23 bit 0 do                      4 +loop  micros swap - .
+   micros  23 bit 0 do  i             drop  4 +loop  micros swap - .
+   micros  23 bit 0 do    PSRAM i + @ drop  4 +loop  micros swap - .
+   micros  23 bit 0 do  i PSRAM i + !       4 +loop  micros swap - . ;
+
+\ sample output: 495471 641201 1486421 1369795
+
+
+
+\ -----------------------------------------------------------------------------
+
+\ -----------------------------------------------------------------------------
+\ vim: set ft=forth :
