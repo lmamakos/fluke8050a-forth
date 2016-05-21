@@ -10,7 +10,7 @@
   $1FFF7A22 h@ ;
 
 : io.all ( -- )  \ display all the readable GPIO registers
-  9 0 do i 0 io io. loop ;
+  io-ports 0 do i 0 io io. loop ;
 
 0 0  io constant PA0      1 0  io constant PB0      2 0  io constant PC0
 0 1  io constant PA1      1 1  io constant PB1      2 1  io constant PC1

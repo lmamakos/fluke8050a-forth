@@ -128,20 +128,50 @@ $64000000 constant PSRAM
     PSRAM i + dup          \ location in lower half
     PSRAM-SIZE 2/ + @	   \ location in upper half and contents
     swap @     	    	   \ get lower half contents
-    2dup <> if cr ." Compare error @" i hex. hex. hex. cr else 2drop then 
+    2dup <> 
+    if 
+      cr ." Compare error @" i hex. hex. hex.
+      ." [re-read: " PSRAM i + @ hex. PSRAM i + PSRAM-SIZE 2/ + @ hex. ." ]"      
+      cr
+    else
+      2drop
+    then 
   4 +loop ;
 
 : verify-halves  ( -- )    \ verify that each half still contains the correct psesudo-random
   ." [1st]"      	   \ sequence based on the genertor
   $12345678 seed !
   PSRAM-SIZE 2/ 0 do
-    random PSRAM i + @ 2dup <> if cr ." miscompare @" i hex. hex. hex. cr else 2drop then
+    PSRAM i + @ random 2dup  ( PSRAM@ random PSRAM@ random )
+    <> if   ( PSRAM@ random )
+      cr
+      ." miscompare @" i hex. ( PSRAM@ random )
+      tuck                    ( random PSRAM@ random )
+      ." R:" hex. ( random PSRAM@ )
+      ." M:" hex. ( random )
+      ." [re-read: R:" hex. PSRAM i + @ ." M:" hex. ." ]"
+      cr
+    else 
+      2drop
+    then
   4 +loop 
 
   $12345678 seed !
    ." [2nd] "
   PSRAM-SIZE 2/ 0 do
-    random PSRAM i + PSRAM-SIZE 2/ + @ 2dup <> if cr ." miscompare @" i hex. hex. hex. cr else 2drop then
+    PSRAM i + PSRAM-SIZE 2/ + @ random 2dup <> 
+    if
+      cr
+      ." miscompare @" i  hex.
+      tuck
+      ." R:" hex.
+      ." M:" hex.
+      ." [re-read: R:" hex.  PSRAM i + PSRAM-SIZE 2/ + @ ." M:" hex. ." ]"
+      cr 
+    else
+      2drop
+    then
+
   4 +loop ;
   
 \ fill both PSRAM halves with pseudo random sequence, and then repeated compare the two halves

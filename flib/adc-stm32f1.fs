@@ -2,11 +2,16 @@
 
 $40012400 constant ADC1
     ADC1 $00 + constant ADC1-SR
+    ADC1 $04 + constant ADC1-CR1
     ADC1 $08 + constant ADC1-CR2
+    ADC1 $2C + constant ADC1-SQR1
+    ADC1 $30 + constant ADC1-SQR2
     ADC1 $34 + constant ADC1-SQR3
     ADC1 $4C + constant ADC1-DR
 
 $40020000 constant DMA1
+    DMA1 $00 + constant DMA1-ISR
+    DMA1 $04 + constant DMA1-IFCR
     DMA1 $08 + constant DMA1-CCR1
     DMA1 $0C + constant DMA1-CNDTR1
     DMA1 $10 + constant DMA1-CPAR1
@@ -17,20 +22,27 @@ $40020000 constant DMA1
   1 ADC1-CR2 bis!  \ set ADON to enable ADC
 ;
 
-: adc ( pin - u )  \ read ADC value
+: adc-calib ( -- )  \ perform an ADC calibration cycle
+  2 bit ADC1-CR2 bis!  begin 2 bit ADC1-CR2 bit@ 0= until ;
+
+: adc# ( pin -- n )  \ convert pin number to adc index
+\ nasty way to map the pins (a "c," table offset lookup might be simpler)
+\   PA0..7 => 0..7, PB0..1 => 8..9, PC0..5 => 10..15
+  dup io# swap  io-port ?dup if shl + 6 + then ;
+
+: adc ( pin -- u )  \ read ADC value
   IMODE-ADC over io-mode!
 \ nasty way to map the pins (a "c," table offset lookup might be simpler)
 \   PA0..7 => 0..7, PB0..1 => 8..9, PC0..5 => 10..15
-  dup io# swap  io-port ?dup if shl + 6 + then
-    ADC1-SQR3 !
-  1 ADC1-CR2 bis!  \ set ADON to start ADC
+  adc# ADC1-SQR3 !
+      1 ADC1-CR2 bis!  \ set ADON to start ADC
   begin 1 bit ADC1-SR bit@ until  \ wait until EOC set
   ADC1-DR @ ;
 
 : adc1-dma ( addr count pin rate -- )  \ continuous DMA-based conversion
-  3 +timer
+  3 +timer        \ set the ADC trigger rate using timer 3
   +adc  adc drop  \ perform one conversion to set up the ADC
-  2dup 0 fill  \ clear sampling buffer
+  2dup 0 fill     \ clear sampling buffer
 
     0 bit RCC-AHBENR bis!  \ DMA1EN clock enable
       2/ DMA1-CNDTR1 !     \ 2-byte entries
@@ -47,6 +59,7 @@ $40020000 constant DMA1
       DMA1-CCR1 !
 
                  0   \ ADC1 triggers on timer 3 and feeds DMA1:
+          23 bit or  \ TSVREFE
           20 bit or  \ EXTTRIG
   %100 17 lshift or  \ timer 3 TRGO event
            8 bit or  \ DMA
