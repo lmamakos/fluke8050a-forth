@@ -2,7 +2,7 @@
 \ PSRAM on HY-STM32F1xxCore144 Core/Dev Board
 \ (addtional PSRAM memory debugging stuff - louie@transsys.com)
 
-compiletoram
+\ compiletoram
 
 $A0000008 constant FSMC-BCR2
 $A000000C constant FSMC-BTR2
