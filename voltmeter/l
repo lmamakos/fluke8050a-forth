@@ -8,7 +8,7 @@ compiletoflash
 ( code-start, see code-size below ) here
 
 include ../mlib/multi.fs
-include ../mlib/disassembler-m3.txt
+include ../lib/disassembler-m3.fs
 include ../flib/digits.fs
 
 \ eventually move tft and graphics libraries here
