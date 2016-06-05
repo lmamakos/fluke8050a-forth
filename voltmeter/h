@@ -1,6 +1,7 @@
 \ install hardware abstractions in flash
 
 cr eraseflash
+
 compiletoflash
 
 \ board definitions for STM32F103 maple mini clone boards

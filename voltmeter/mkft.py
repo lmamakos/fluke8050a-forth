@@ -13,7 +13,7 @@ for ch in xrange(0, 128):
         sys.exit(1)
 
     sys.stdout.write("( char %3d 0x%02x  " % (ch, ch))
-    if chr(ch) in string.printable and ch > 31:
+    if chr(ch) in string.printable and ch > 31 and chr(ch) not in ('\\', ')'):
         sys.stdout.write("'%s' ) " % chr(ch))
     else:
         sys.stdout.write("    ) ")
