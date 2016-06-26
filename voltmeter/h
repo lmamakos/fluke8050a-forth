@@ -19,8 +19,8 @@ include ../flib/adc-stm32f1.fs
 include ../flib/ring.fs
 \ include ../flib/uart2-stm32f1.fs
 \ include ../flib/uart2-irq-stm32f1.fs
-include ../flib/spi-stm32f1.fs
 
+include ../flib/spi-stm32f1.fs
 
 PB6 constant SCL
 PB7 constant SDA
@@ -30,7 +30,7 @@ PB1 constant LED
 
 : init ( -- )  \ board initialisation
   -jtag  \ disable JTAG, we only need SWD
-  OMODE-PP LED io-mode!     LED ioc!
+  OMODE-PP LED io-mode!     LED ios!   \ turn on LED
   72MHz
   flash-kb . ." KB <voltmeter> " hwid hex. cr
   1000 systick-hz
