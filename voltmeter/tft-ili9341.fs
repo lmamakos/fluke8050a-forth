@@ -89,7 +89,7 @@ $AFE5 constant GREENYELLOW       \ 173, 255,  47
 $F81F constant PINK        
 
 \ needs to be defined previously
-PA3  constant TFT-D/C  \ register select
+\ PB0 constant TFT-D/C  \ register select
 \ PA4 constant TFT-CS  \ chip select   (SPI1)
 \ PA5 constant TFT-SC  \ serial clock  (SPI1)
 \ PA6 constant TFT-DO  \ data from LCD (SPI1)

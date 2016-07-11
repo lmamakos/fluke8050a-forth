@@ -39,3 +39,7 @@
   fluke_func_d io@ ." FD=" . cr
 ;
 
+tft-init
+clear
+WHITE tft-fg !
+
