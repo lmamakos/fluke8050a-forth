@@ -2,8 +2,7 @@
 \ needs h
 \ includes d
 
-( cornerstone ) <<<hal-dad>>>
-
+( cornerstone ) <<<hal-voltmeter>>> cr
 
 compiletoflash
 
@@ -13,12 +12,22 @@ include ../mlib/multi.fs
 include ../lib/disassembler-m3.fs
 include ../flib/digits.fs
 include 8x16.fs
+
+include tft-ili9341.fs
+include graphics.fs
+
 \ eventually move tft and graphics libraries here
+
+: init
+  init
+  tft-init clear 3 ili9341-setRotation
+  ." Application Init" cr
+;
 
 ( code-size ) here swap - .
 cornerstone <<<lib-voltmeter>>>
 
 ( flash-end ) here hex.
 
-include d
+\ include d
 \ vim: set ft=forth :

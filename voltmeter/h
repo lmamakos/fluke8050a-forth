@@ -1,6 +1,6 @@
 \ install hardware abstractions in flash
 
-cr eraseflash
+cr eraseflash cr
 
 compiletoflash
 
@@ -22,19 +22,52 @@ include ../flib/ring.fs
 
 include ../flib/spi-stm32f1.fs
 
-PB6 constant SCL
-PB7 constant SDA
-include ../flib/i2c-bb.fs
-
 PB1 constant LED
+
+\ PA4 is default SSEL for LCD display in SPI driver
+
+PB2  constant fluke_dp
+PA8  constant fluke_hv
+
+PC13 constant fluke_func_a
+PC14 constant fluke_func_b
+PC15 constant fluke_func_c
+PB10 constant fluke_func_d
+
+PB7  constant fluke_w
+PB6  constant fluke_x
+PB4  constant fluke_y
+PB3  constant fluke_z
+
+PA15 constant fluke_rng_a
+PA14 constant fluke_rng_b
+PA13 constant fluke_rng_c
+
+PB15 constant fluke_st0
+PB14 constant fluke_st1
+PB13 constant fluke_st2
+PB12 constant fluke_st3
+PB11 constant fluke_st4
+
+: fl-input ( pin -- )
+  IMODE-FLOAT swap io-mode!
+;
+
+: init-fluke-inputs
+  fluke_func_a fl-input   fluke_w fl-input    fluke_rng_a fl-input    fluke_st0 fl-input   fluke_dp fl-input
+  fluke_func_b fl-input   fluke_x fl-input    fluke_rng_b fl-input    fluke_st1 fl-input   fluke_hv fl-input
+  fluke_func_c fl-input   fluke_y fl-input    fluke_rng_c fl-input    fluke_st2 fl-input
+  fluke_func_d fl-input   fluke_z fl-input                            fluke_st3 fl-input
+;
 
 : init ( -- )  \ board initialisation
   -jtag  \ disable JTAG, we only need SWD
   OMODE-PP LED io-mode!     LED ios!   \ turn on LED
   72MHz
   flash-kb . ." KB <voltmeter> " hwid hex. cr
+  init-fluke-inputs
   1000 systick-hz
 ;
 
-cornerstone <<<hal-dad>>>
+cornerstone <<<hal-voltmeter>>>
 \ vim: set ft=forth :

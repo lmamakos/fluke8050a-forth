@@ -10,8 +10,6 @@
 \ -----------------------------------------------------------------------------
 \ stuff to move to 'l' when stable
 
-include tft-ili9341.fs
-include graphics.fs
 
 \ -----------------------------------------------------------------------------
 
@@ -34,27 +32,10 @@ include graphics.fs
 
 \ -----------------------------------------------------------------------------
 
-2274 variable Voff
-34,32 2variable Vmul
+: func.
+  fluke_func_a io@ ." FA=" . 32 emit
+  fluke_func_b io@ ." FB=" . 32 emit
+  fluke_func_c io@ ." FC=" . 32 emit
+  fluke_func_d io@ ." FD=" . cr
+;
 
-: vreading ( pin -- value )  \ take an averaged ADC reading
-  0  100 0 do over adc + loop  100 / nip ;
-
-: vmeter ( -- )  \ a simple voltmeter on PA3
-  +adc tft-init
-  begin cr
-    0 PA3 vreading dup . Voff @ -  \ take a reading
-    4095,0 f/ Vmul 2@ f*           \ convert to Volt
-    2dup 3 f.n ." V"               \ display result on serial port
-    100,0 f* abs shownum drop      \ and on the OLED display
-    500 ms                         \ slow down
-  key? until ;
-
-: looper
-32000 0 do
-  i shownum
-  key? if leave then
-  led iox!
-loop ;
-
-\ vim: set ft=forth :
