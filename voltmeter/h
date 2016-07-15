@@ -1,4 +1,4 @@
-\ install hardware abstractions in flash
+\ install hardware abstractions in flash   -*- forth -*-
 
 cr eraseflash cr
 
@@ -30,15 +30,15 @@ PB0 constant TFT-D/C
 PB2  constant fluke_dp
 PA8  constant fluke_hv
 
-PC13 constant fluke_func_a
-PC14 constant fluke_func_b
-PC15 constant fluke_func_c
-PB10 constant fluke_func_d
+PC13 constant fluke_func_a   \  AC/DC
+PC14 constant fluke_func_b   \  V
+PC15 constant fluke_func_c   \  mA
+PB10 constant fluke_func_d   \  relative mode switch
 
-PB7  constant fluke_w
-PB6  constant fluke_x
-PB4  constant fluke_y
-PB3  constant fluke_z
+PB7  constant fluke_w        \ MSB
+PB6  constant fluke_x        \
+PB4  constant fluke_y        \
+PB3  constant fluke_z        \ LSB
 
 PA15 constant fluke_rng_a
 PA14 constant fluke_rng_b

@@ -1,4 +1,4 @@
-\ load development code
+\ load development code    -*- forth -*-
 \ needs l
 
 \ reset
@@ -39,7 +39,54 @@
   fluke_func_d io@ ." FD=" . cr
 ;
 
-tft-init
-clear
-WHITE tft-fg !
+0 variable d0
+0 variable d1
+0 variable d2
+0 variable d3
+0 variable d4
 
+: getdigit ( io variable -- )
+    swap  ( variable io )
+    dup  ( variable io io )
+    begin
+	io@ if
+	    ( variable io )
+	    fluke_z io@                     \ bit 0  ( variable io sum )
+	    fluke_y io@       shl +         \ bit 1  ( variable io sum )
+	    fluke_x io@  2 lshift +         \ bit 2  ( variable io sum )
+	    fluke_w io@  3 lshift +         \ bit 3  ( variable io sum )
+	    fluke_dp io@ 8 lshift +         \ bit 4  ( decimal point )
+	    swap  ( variable sum io )
+	    io@ 0= if
+		." lost strobe "cr
+	    then
+	    ( variable sum )
+	    swap !
+	    0
+	else
+	    ( variable io )
+	    dup dup ( variable io io )
+	then
+    0= until	
+;
+
+: print-digit
+    dup
+    1 8 lshift and if ." ." then
+    15 and .
+
+;
+
+: scan 
+    fluke_st0 d0 getdigit
+    fluke_st1 d1 getdigit
+    fluke_st2 d2 getdigit
+    fluke_st3 d3 getdigit
+    fluke_st4 d4 getdigit
+    
+    d0 @ print-digit
+    d1 @ print-digit
+    d2 @ print-digit
+    d3 @ print-digit
+    d4 @ print-digit
+;
