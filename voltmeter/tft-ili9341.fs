@@ -215,7 +215,7 @@ ILI9341_TFTHEIGHT variable ili9341_height
 \ for rendering a character bitmap from a font in many fewer
 \ SPI transactions.  takes advantage of "windowing" logic in
 \ ILI9341 controller
-: raster ( addr xsize ysize x y -- )
+: raster ( addr xsize-pixels ysize-pixels x-position y-position  -- )
     \ yeah, this is so much easier than having local variables
     3 pick ( addr xsize ysize x y -- addr xsize ysize x y xsize )
     2 pick ( addr xsize ysize x y xsize -- )
@@ -246,7 +246,15 @@ ILI9341_TFTHEIGHT variable ili9341_height
     loop drop
     -spi
 ;
-    
+
+
+\ render a bitmap in one operation.  experimental alternative
+\ for rendering a character bitmap from a font in many fewer
+\ SPI transactions.  takes advantage of "windowing" logic in
+\ ILI9341 controller
+
+
+
 \ clear, putpixel, and display are used by the graphics.fs code
 
 : clear

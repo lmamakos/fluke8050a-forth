@@ -1,3 +1,4 @@
+\ 32w x 64h
 create digits
 binary
   0000000000001111000000000000 ,
