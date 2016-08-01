@@ -2303,3 +2303,5 @@ create bmow8x16
  \ # #  # #
  \ # #  # #
  \ 
+
+calign  \ should't be necessary since even number of c, bytes..

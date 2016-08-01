@@ -385,4 +385,6 @@ creat dp_small
   $F0 c,
   $60 c,
 
+calign
+
 \ @EOF

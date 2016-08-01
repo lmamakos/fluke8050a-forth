@@ -120,4 +120,6 @@ create symboleSignSm
     $00 c, $00 c,
     $00 c, $00 c,
 
+calign
+
 \ @EOF

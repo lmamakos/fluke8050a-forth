@@ -760,4 +760,6 @@ const uint8_t symbolUnit_sm_10[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
 
+calign
+
 \ @EOF

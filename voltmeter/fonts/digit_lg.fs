@@ -913,4 +913,5 @@ create dp_lg
   $00 c,
   $00 c,
 
+calign
 \ @EOF

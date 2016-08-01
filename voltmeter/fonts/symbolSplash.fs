@@ -118,3 +118,7 @@ create splashProgName
   $10 c, $40 c, $04 c, $00 c, $20 c, $A0 c, $A0 c, $A0 c, $90 c, $4C c,
   $10 c, $40 c, $04 c, $00 c, $11 c, $11 c, $11 c, $11 c, $20 c, $20 c,
   $10 c, $40 c, $04 c, $3F c, $8E c, $0E c, $0E c, $0E c, $20 c, $23 c,
+
+calign
+
+\ @EOF

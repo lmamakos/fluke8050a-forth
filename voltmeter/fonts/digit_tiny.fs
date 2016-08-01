@@ -161,4 +161,6 @@ const uint8_t digit_tiny_0[] PROGMEM = {
   $84 c,
   $78 c,
 
+calign
+
 \ @EOF

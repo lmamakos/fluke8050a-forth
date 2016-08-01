@@ -37,4 +37,6 @@ for ch in xrange(0, 128):
             row = 0
 
     sys.stdout.write("\n")
+
+sys.stdout.write("\ncalign\n")
         

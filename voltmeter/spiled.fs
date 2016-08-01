@@ -17,6 +17,7 @@ create 7segment-digit-map ( digits 0 - 9, A - F )
    $3f c, $06 c, $5b c, $4f c, $66 c, $6d c, $7d c, $07 c,
    $7f c, $6f c, $77 c, $7c c, $58 c, $5e c, $79 c, $71 c,
 
+calign
 
 : spi-7map ( int -- bitmap )
     $0f and 7segment-digit-map + c@

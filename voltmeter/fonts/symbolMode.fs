@@ -216,5 +216,7 @@ create setZ
     $1F c, $80 c, $FF c, $E0 c, $3C c, $00 c, $3F c, $FE c,
     $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,
 
+calign
+
 \ @EOF
 
