@@ -19,7 +19,7 @@
 symbolSign_x 7 + 8 / symbolSign_y * constant symbolSign_sz
 
 create symbolSign
-  // plus
+  \   plus
     $00 c, $0F c, $E0 c, $00 c,
     $00 c, $0F c, $E0 c, $00 c,
     $00 c, $0F c, $E0 c, $00 c,
@@ -53,7 +53,7 @@ create symbolSign
     $00 c, $0F c, $E0 c, $00 c,
     $00 c, $00 c, $00 c, $00 c,
 
-  // minus
+  \   minus
     $00 c, $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c, $00 c,
@@ -92,7 +92,7 @@ create symbolSign
 symbolSignSm_x 7 + 8 / symbolSignSm_y * constant symbolSignSm_sz
 
 create symboleSignSm
-  // plus
+  \   plus
     $0E c, $00 c,
     $0E c, $00 c,
     $0E c, $00 c,
@@ -106,7 +106,7 @@ create symboleSignSm
     $0E c, $00 c,
     $00 c, $00 c,
 
-  // minus
+  \   minus
     $00 c, $00 c,
     $00 c, $00 c,
     $00 c, $00 c,

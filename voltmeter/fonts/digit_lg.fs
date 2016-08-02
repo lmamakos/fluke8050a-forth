@@ -5,7 +5,7 @@
 
  
 40 constant digit_lg_x
-80 constant digit_lg_x
+80 constant digit_lg_y
 digit_lg_x 7 + 8 / digit_lg_y * constant digit_lg_sz
 create digit_lg
 \ 0

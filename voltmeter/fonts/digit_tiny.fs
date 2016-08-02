@@ -6,12 +6,11 @@
 
 8  constant digit_tiny_x
 13 constant digit_tiny_y
-digit_sm_x 7 + 8 / digit_sm_y * constant digit_sm_sz
+digit_tiny_x 7 + 8 / digit_tiny_y * constant digit_tiny_sz
 
 create digit_tiny
 
 \  0
-const uint8_t digit_tiny_0[] PROGMEM = {
   $38 c,
   $44 c,
   $82 c,

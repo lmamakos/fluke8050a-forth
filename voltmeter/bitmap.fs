@@ -9,11 +9,11 @@
     0<> if
 	\ pixel is turned on
 	tft-fg @
-\	42 emit
+	42 emit
     else
 	\ pixel is turned off
 	tft-bg @
-\	$20 emit
+	$20 emit
     then
     h>tft  \ push 16 bit pixel value out
 ;
@@ -32,7 +32,7 @@
 
     rast-ysize @ 0  do                 \ for each row of pixels
 	\ for each row, always start anew with the next byte in the bitmap
-\( XXX )	cr 
+( XXX )	cr 
 	rast-cptr @ c@          \ get byte
 	1 rast-cptr +!          \ increment to next byte
 	$80                     \ mask

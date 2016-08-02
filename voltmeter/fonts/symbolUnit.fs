@@ -24,7 +24,7 @@
 
 56 constant symbolUnit_x
 41 constant symbolUnit_y
-symbolUnitl_x 7 + 8 / symbolUnit_y * constant symbolUnitSmall_sz
+symbolUnit_x 7 + 8 / symbolUnit_y * constant symbolUnit_sz
 
 create symbolUnit
   \   V
@@ -507,7 +507,6 @@ symbolUnitSmall_x 7 + 8 / symbolUnitSmall_y * constant symbolUnitSmall_sz
 
 create symbolUnitSmall
   \   V
-const uint8_t symbolUnit_sm_0[] PROGMEM =
     $00 c, $00 c, $00 c,
     $C1 c, $80 c, $00 c,
     $C1 c, $80 c, $00 c,
@@ -528,9 +527,9 @@ const uint8_t symbolUnit_sm_0[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
+    $00 c, $00 c, $00 c,
+
   \   mV
-const uint8_t symbolUnit_sm_1[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $0C c, $18 c,
     $00 c, $0C c, $18 c,
@@ -551,9 +550,9 @@ const uint8_t symbolUnit_sm_1[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
+    $00 c, $00 c, $00 c,
+
   \   microA
-const uint8_t symbolUnit_sm_2[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $1C c, $00 c,
     $00 c, $1C c, $00 c,
@@ -574,9 +573,9 @@ const uint8_t symbolUnit_sm_2[] PROGMEM =
     $C0 c, $00 c, $00 c,
     $C0 c, $00 c, $00 c,
     $C0 c, $00 c, $00 c,
-    $C0 c, $00 c, $00 };
-  \   mA
-const uint8_t symbolUnit_sm_3[] PROGMEM =
+    $C0 c, $00 c, $00 c,
+
+\   mA
     $00 c, $00 c, $00 c,
     $00 c, $01 c, $C0 c,
     $00 c, $01 c, $C0 c,
@@ -597,9 +596,9 @@ const uint8_t symbolUnit_sm_3[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
-  \   Ohm
-const uint8_t symbolUnit_sm_4[] PROGMEM =
+    $00 c, $00 c, $00 c,
+
+\   Ohm
     $00 c, $00 c, $00 c,
     $1F c, $80 c, $00 c,
     $3F c, $C0 c, $00 c,
@@ -620,9 +619,9 @@ const uint8_t symbolUnit_sm_4[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
-  \   kOhm
-const uint8_t symbolUnit_sm_5[] PROGMEM =
+    $00 c, $00 c, $00 c,
+
+\   kOhm
     $00 c, $00 c, $00 c,
     $C0 c, $1F c, $80 c,
     $C0 c, $3F c, $C0 c,
@@ -643,9 +642,9 @@ const uint8_t symbolUnit_sm_5[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
-  \   MOhm
-const uint8_t symbolUnit_sm_6[] PROGMEM =
+    $00 c, $00 c, $00 c,
+
+\   MOhm
     $00 c, $00 c, $00 c,
     $61 c, $81 c, $F8 c,
     $61 c, $83 c, $FC c,
@@ -666,9 +665,9 @@ const uint8_t symbolUnit_sm_6[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
+    $00 c, $00 c, $00 c,
+
   \   dB
-const uint8_t symbolUnit_sm_7[] PROGMEM =
     $06 c, $00 c, $00 c,
     $06 c, $7C c, $00 c,
     $06 c, $7E c, $00 c,
@@ -689,9 +688,9 @@ const uint8_t symbolUnit_sm_7[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
+    $00 c, $00 c, $00 c,
+
   \   mS
-const uint8_t symbolUnit_sm_8[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $03 c, $E0 c,
     $00 c, $07 c, $F0 c,
@@ -712,9 +711,9 @@ const uint8_t symbolUnit_sm_8[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
-  \   nS
-const uint8_t symbolUnit_sm_9[] PROGMEM =
+    $00 c, $00 c, $00 c,
+
+\   nS
     $00 c, $00 c, $00 c,
     $00 c, $1F c, $00 c,
     $00 c, $3F c, $80 c,
@@ -735,9 +734,9 @@ const uint8_t symbolUnit_sm_9[] PROGMEM =
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c,
-    $00 c, $00 c, $00 };
-  \   Ohm_z
-const uint8_t symbolUnit_sm_10[] PROGMEM =
+    $00 c, $00 c, $00 c,
+
+\   Ohm_z
     $00 c, $00 c, $00 c,
     $1F c, $80 c, $00 c,
     $3F c, $C0 c, $00 c,

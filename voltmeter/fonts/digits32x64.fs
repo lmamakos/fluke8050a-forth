@@ -7,6 +7,10 @@
     c,
 ;
 
+32 constant digits32x64_x
+64 constant digits32x64_y
+digits32x64_x 7 + 8 / digits32x64_y * constant digits32x64_sz
+
 create digits32x64
 binary
   0000000000001111000000000000 bs,

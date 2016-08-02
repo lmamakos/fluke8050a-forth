@@ -351,7 +351,7 @@ create digit_sm
 
 4  constant dp_small_x
 32 constant dp_small_y
-creat dp_small
+create dp_small
   $00 c,
   $00 c,
   $00 c,

@@ -10,13 +10,22 @@ compiletoflash
 
 include ../mlib/multi.fs
 include ../lib/disassembler-m3.fs
-include ../flib/digits.fs
-include 8x16.fs
+
+\ include ../flib/digits.fs
+\ include 8x16.fs
 
 include tft-ili9341.fs
 include graphics.fs
 
-\ eventually move tft and graphics libraries here
+include fonts/8x16.fs
+include fonts/digit_lg.fs
+include fonts/digit_sm.fs
+include fonts/digit_tiny.fs
+include fonts/digits32x64.fs
+include fonts/symbolMode.fs
+include fonts/symbolSign.fs
+include fonts/symbolSplash.fs
+include fonts/symbolUnit.fs
 
 : init
   init
