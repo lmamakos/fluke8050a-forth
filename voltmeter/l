@@ -28,8 +28,10 @@ include fonts/symbolSplash.fs
 include fonts/symbolUnit.fs
 
 : init
-  init
-  tft-init clear 3 ili9341-setRotation
+  init     \ hook previous version
+  tft-init
+  3 ili9341-setRotation
+  clear
   ." Application Init" cr
 ;
 

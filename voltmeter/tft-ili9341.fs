@@ -104,7 +104,7 @@ $F81F constant PINK
     >spi
     -spi           \ unselect SSL
     TFT-D/C ios!  \ D/CX high - data
-  ; inline
+  ;
 
 : tft-data ( u -- )
     TFT-D/C ios!   \ D/CX low - command
@@ -112,7 +112,7 @@ $F81F constant PINK
     >spi
     -spi           \ unselect SSL
     TFT-D/C ios!   \ D/CX high - data
- ; inline
+ ;
     
 : h>tft ( u -- )
   \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
@@ -211,49 +211,65 @@ ILI9341_TFTHEIGHT variable ili9341_height
 ;
 
 
-\ render a bitmap in one operation.  experimental alternative
-\ for rendering a character bitmap from a font in many fewer
-\ SPI transactions.  takes advantage of "windowing" logic in
-\ ILI9341 controller
-: raster ( addr xsize-pixels ysize-pixels x-position y-position  -- )
-    \ yeah, this is so much easier than having local variables
-    3 pick ( addr xsize ysize x y -- addr xsize ysize x y xsize )
-    2 pick ( addr xsize ysize x y xsize -- )
-    + 1-   ( addr xsize ysize x y x1 )
-    over   ( addr xsize ysize x y x1 y )
-    4 pick ( addr xsize ysize x y x1 y ysize )
-    + 1-   ( addr xsize ysize x y x1 y1 )
-    setwindow ( addr xsize ysize x0 y0 x1 y1 -- addr xsize ysize )
-    *      ( addr #bits )
-    +spi
-    
-    \ now, iterate over all the bits and write each pixel value out, including
-    \ both the foreground and background pixels
-    
-    \ xxx need to scale #bits to words or change loop to bits?  probably
-    \ carry xsize and ysize along and handle partial bytes in rows.
-    32 /
-    0 do ( addr #bits 0 -- addr )
-	32 0 do
-	    i $1f xor bit over bit@ if
-		tft-fg @
-	    else
-		tft-bg @
-	    then
-	    h>tft
-	loop
-	4 +
-    loop drop
-    -spi
+
+0 variable bitmap-xsize
+0 variable bitmap-ysize
+0 variable bitmap-cptr
+0 variable bitmap-x
+0 variable bitmap-y
+
+: set-pixel ( pixel -- )
+    0<> if
+	\ pixel is turned on
+	tft-fg @
+\	42 emit
+    else
+	\ pixel is turned off
+	tft-bg @
+\	$20 emit
+    then
+    h>tft  \ push 16 bit pixel value out
 ;
 
+: bitmap ( addr xsize-pixels ysize-pixels x-position y-position  -- )
+    bitmap-y !
+    bitmap-x !
+    bitmap-ysize !
+    bitmap-xsize !
+    bitmap-cptr !
+    bitmap-x @  bitmap-y @  bitmap-x @ bitmap-xsize @ + 1-   bitmap-y @ bitmap-ysize @ + 1-  setwindow
 
-\ render a bitmap in one operation.  experimental alternative
-\ for rendering a character bitmap from a font in many fewer
-\ SPI transactions.  takes advantage of "windowing" logic in
-\ ILI9341 controller
+    +spi
+    \ now, iterate over all the bits and write each pixel value out, including
+    \ both the foreground and background pixels
 
+    bitmap-ysize @ 0  do                 \ for each row of pixels
+	\ for each row, always start anew with the next byte in the bitmap
+\ ( XXX )	cr 
+	bitmap-cptr @ c@          \ get byte
+	1 bitmap-cptr +!          \ increment to next byte
+	$80                     \ mask
+	( byte mask )
+	bitmap-xsize @ 0  do  ( byte mask )
+	    ?dup 0= if  \ have we walked off the end of the byte?
+		drop    \ byte
+		bitmap-cptr @ c@ ( byte )
+		1 bitmap-cptr +! \ increment to next byte
+		$80    \ ( byte mask )
+	    then
+	    ( byte mask )
+	    2dup  ( byte mask byte mask )
+	    and   ( byte mask pixel )
+	    -rot  ( pixel byte mask )
+	    shr   \ shift mask bit towards LSB 
+	    rot   ( byte mask pixel )
 
+	    set-pixel
+	loop  \ per-colume pixel in row
+	2drop         \ drop byte and last mask
+    loop  \ per row
+    -spi
+;
 
 \ clear, putpixel, and display are used by the graphics.fs code
 
