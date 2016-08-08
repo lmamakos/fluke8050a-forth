@@ -1,7 +1,7 @@
 \ tft driver for ILI9341 chip, uses SPI1 hardware
 
-240 constant ILI9341_TFTWIDTH
-320 constant ILI9341_TFTHEIGHT
+240 constant TFTWIDTH
+320 constant TFTHEIGHT
 
 \ ILI 9341 commands - the $100 bit is set as a sentinal to indicate a command
 
@@ -95,9 +95,6 @@ $F81F constant PINK
 \ PA6 constant TFT-DO  \ data from LCD (SPI1)
 \ PA7 constant TFT-DI  \ data into LCD (SPI1)
 
-: >tft ( u -- )
-  dup $100 and TFT-D/C io!  +spi >spi -spi  TFT-D/C ios! ; inline
-
 : tft-cmd ( u -- )
     TFT-D/C ioc!   \ D/CX low - command
     +spi           \ SSEL
@@ -115,8 +112,8 @@ $F81F constant PINK
  ;
     
 : h>tft ( u -- )
-  \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
-  dup 8 rshift >spi  >spi ; inline
+    \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
+    dup 8 rshift >spi  >spi ; 
 
 BLACK variable tft-bg
 RED   variable tft-fg
@@ -163,27 +160,27 @@ $ffff           h,
     repeat 2drop
     200 ms ILI9341_DISPON tft-cmd ;
 
-ILI9341_TFTWIDTH  variable ili9341_width
-ILI9341_TFTHEIGHT variable ili9341_height
+TFTWIDTH  variable ili9341_width
+TFTHEIGHT variable ili9341_height
 
 : ili9341-setRotation ( u -- ) \ 0 - 3 for display rotation selection
     ILI9341_MADCTL tft-cmd
     3 and case
 	0 of ILI9341_MADCTL_MX ILI9341_MADCTL_BGR or tft-data
-	    ILI9341_TFTWIDTH ili9341_width !
-	    ILI9341_TFTHEIGHT ili9341_height !
+	    TFTWIDTH ili9341_width !
+	    TFTHEIGHT ili9341_height !
 	endof
 	1 of ILI9341_MADCTL_MV ILI9341_MADCTL_BGR or tft-data
-	    ILI9341_TFTWIDTH ili9341_height !
-	    ILI9341_TFTHEIGHT ili9341_width !
+	    TFTWIDTH ili9341_height !
+	    TFTHEIGHT ili9341_width !
 	endof
 	2 of ILI9341_MADCTL_MY ILI9341_MADCTL_BGR or tft-data
-	    ILI9341_TFTWIDTH ili9341_width !
-	    ILI9341_TFTHEIGHT ili9341_height !
+	    TFTWIDTH ili9341_width !
+	    TFTHEIGHT ili9341_height !
 	endof
 	3 of ILI9341_MADCTL_MX ILI9341_MADCTL_MY or ILI9341_MADCTL_MV or ILI9341_MADCTL_BGR or tft-data
-	    ILI9341_TFTWIDTH ili9341_height !
-	    ILI9341_TFTHEIGHT ili9341_width !
+	    TFTWIDTH ili9341_height !
+	    TFTHEIGHT ili9341_width !
 	endof
     endcase  ;
 
@@ -218,7 +215,7 @@ ILI9341_TFTHEIGHT variable ili9341_height
 0 variable bitmap-x
 0 variable bitmap-y
 
-: set-pixel ( pixel -- )
+: ili9341-set-pixel ( pixel -- )
     0<> if
 	\ pixel is turned on
 	tft-fg @
@@ -264,7 +261,7 @@ ILI9341_TFTHEIGHT variable ili9341_height
 	    shr   \ shift mask bit towards LSB 
 	    rot   ( byte mask pixel )
 
-	    set-pixel
+	    ili9341-set-pixel
 	loop  \ per-colume pixel in row
 	2drop         \ drop byte and last mask
     loop  \ per row
