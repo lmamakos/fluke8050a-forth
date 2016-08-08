@@ -52,7 +52,7 @@
     begin
 	dup 0<>
     while
-	    fnt-get-first-char fnt-drawchar cut-first-char
+	    fnt-get-first-char fnt-drawchar fnt-cut-first-char
     repeat
     2drop
 ;
