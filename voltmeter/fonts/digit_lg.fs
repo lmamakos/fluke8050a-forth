@@ -4,11 +4,12 @@
 \ (michael@vondervotteimittiss.com)
 
  
-40 constant digit_lg_x
-80 constant digit_lg_y
-digit_lg_x 7 + 8 / digit_lg_y * constant digit_lg_sz
-create digit_lg
-\ 0
+\ 40 constant digit_lg_x
+\ 80 constant digit_lg_y
+\ digit_lg_x 7 + 8 / digit_lg_y * constant digit_lg_sz
+
+char 0 char 9 40 80 ( asc-min asc-max x y )  fontdef digit_lg
+ \ 0
   $00 c, $00 c, $FF c, $00 c, $00 c,
   $00 c, $07 c, $FF c, $E0 c, $00 c,
   $00 c, $0F c, $FF c, $F0 c, $00 c,
@@ -90,7 +91,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 1
+ \ 1
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $7F c, $FF c, $C0 c, $00 c,
   $00 c, $7F c, $FF c, $C0 c, $00 c,
@@ -172,7 +173,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 2
+ \ 2
   $00 c, $01 c, $FF c, $80 c, $00 c,
   $00 c, $0F c, $FF c, $F0 c, $00 c,
   $00 c, $3F c, $FF c, $FC c, $00 c,
@@ -254,7 +255,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 3
+ \ 3
   $00 c, $03 c, $FF c, $80 c, $00 c,
   $00 c, $1F c, $FF c, $F0 c, $00 c,
   $00 c, $7F c, $FF c, $FC c, $00 c,
@@ -336,7 +337,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 4
+ \ 4
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $01 c, $FF c, $80 c,
   $00 c, $00 c, $03 c, $FF c, $80 c,
@@ -418,7 +419,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 5
+ \ 5
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $0F c, $FF c, $FF c, $E0 c,
   $00 c, $0F c, $FF c, $FF c, $E0 c,
@@ -500,7 +501,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 6
+ \ 6
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $1F c, $FC c, $00 c,
   $00 c, $00 c, $3F c, $F8 c, $00 c,
@@ -582,7 +583,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 7
+ \ 7
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $0F c, $FF c, $FF c, $FF c, $FC c,
   $0F c, $FF c, $FF c, $FF c, $F8 c,
@@ -664,7 +665,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 8
+ \ 8
   $00 c, $01 c, $FF c, $C0 c, $00 c,
   $00 c, $0F c, $FF c, $F8 c, $00 c,
   $00 c, $1F c, $FF c, $FC c, $00 c,
@@ -746,7 +747,7 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-\ 9
+ \ 9
   $00 c, $00 c, $FF c, $80 c, $00 c,
   $00 c, $07 c, $FF c, $F0 c, $00 c,
   $00 c, $1F c, $FF c, $FC c, $00 c,
@@ -828,10 +829,13 @@ create digit_lg
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
+calign
+
+
 \ dp width & height
-8  constant dp_lg_x
-80 constant dp_lg_y
-create dp_lg
+\ 8  constant dp_lg_x
+\ 80 constant dp_lg_y
+0 0 8 80 fontdef dp_lg
   $00 c,
   $00 c,
   $00 c,

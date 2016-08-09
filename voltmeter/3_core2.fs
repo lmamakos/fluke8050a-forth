@@ -4,8 +4,6 @@
 
 compiletoflash
 
-include tft-ili9341.fs
-include graphics.fs
 
 \ initialize 
 : init
@@ -15,10 +13,12 @@ include graphics.fs
     else
 	tft-init
 	3 ili9341-setRotation
+	BLACK tft-bg !
 	clear
-	NAVY tft-bg !   CYAN tft-fg !
+	YELLOW tft-bg !   BLACK tft-fg !
 	splashFluke splashFlukeX splashFlukeY 100 100 bitmap
-
+	BLACK tft-bg !
+	CYAN tft-fg !
 	." Application Init" cr
     then
 ;

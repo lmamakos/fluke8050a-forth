@@ -12,8 +12,13 @@ include ../flib/uart2-stm32f1.fs
 include ../flib/uart2-irq-stm32f1.fs
 include ../flib/spi-stm32f1.fs
 
-( include all the fonts )
+include tft-ili9341.fs
+include graphics.fs
 
+( font rendering subroutines )
+include font.fs
+
+( include all the fonts )
 ( include fonts/8x16.fs )
 include fonts/8x16.fs
 

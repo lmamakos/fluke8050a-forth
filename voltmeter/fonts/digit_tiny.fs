@@ -4,12 +4,11 @@
 \ (michael@vondervotteimittiss.com)
 
 
-8  constant digit_tiny_x
-13 constant digit_tiny_y
-digit_tiny_x 7 + 8 / digit_tiny_y * constant digit_tiny_sz
+\ 8  constant digit_tiny_x
+\ 13 constant digit_tiny_y
+\ digit_tiny_x 7 + 8 / digit_tiny_y * constant digit_tiny_sz
 
-create digit_tiny
-
+char 0 char 9 8 13  ( asc-min asc-max x y ) fontdef digit_tiny
 \  0
   $38 c,
   $44 c,

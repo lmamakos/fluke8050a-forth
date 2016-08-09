@@ -15,11 +15,11 @@
 2 constant MODE_AC
 3 constant MODE_REL
 
-40 constant symbolMode_x
-32 constant symbolMode_y
-symbolMode_x 7 + 8 / symbolMode_y * constant symbolMode_sz
+\ 40 constant symbolMode_x
+\ 32 constant symbolMode_y
+\ symbolMode_x 7 + 8 / symbolMode_y * constant symbolMode_sz
 
-create symbolMode
+0 4 40 32  ( asc-min asc-max x y ) fontdef symbolMode
 \   DC 
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
@@ -122,10 +122,13 @@ create symbolMode
   $F0 c, $78 c, $FF c, $C3 c, $FF c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
 
-19 constant symbolMode_small_x
-14 constant symbolMode_small_y
+calign
 
-create symboleMode_small
+\ ------------------------------------------------------------------------------------
+\ 19 constant symbolMode_small_x
+\ 14 constant symbolMode_small_y
+
+0 3 19 14  ( asc-min asc-max x y ) fontdef symboleMode_small
 \   DC
     $FC c, $03 c, $80 c,
     $FE c, $07 c, $C0 c,
@@ -158,10 +161,13 @@ create symboleMode_small
     $C1 c, $87 c, $C0 c,
     $C1 c, $83 c, $80 c,
 
+calign
 
-36 constant lobatt_x
-16 constant lobatt_y
-create lowbatt
+\ ------------------------------------------------------------------------------------
+
+\ 36 constant lobatt_x
+\ 16 constant lobatt_y
+0 0 36 16  ( asc-min asc-max x y ) fontdef lowbatt
     $FF c, $FF c, $FF c, $FF c, $C0 c,
     $FF c, $FF c, $FF c, $FF c, $C0 c,
     $C0 c, $00 c, $00 c, $00 c, $C0 c,
@@ -179,10 +185,11 @@ create lowbatt
     $FF c, $FF c, $FF c, $FF c, $C0 c,
     $FF c, $FF c, $FF c, $FF c, $C0 c,
 
-64 constant setZ_x
-32 constant setZ_y
-create setZ
+calign
 
+\ 64 constant setZ_x
+\ 32 constant setZ_y
+0 0 64 32  ( asc-min asc-max x y ) fontdef setZ
     $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,
     $0F c, $C0 c, $FF c, $E7 c, $FF c, $E0 c, $1F c, $FF c,
     $3F c, $E0 c, $FF c, $E7 c, $FF c, $E0 c, $1F c, $FE c,

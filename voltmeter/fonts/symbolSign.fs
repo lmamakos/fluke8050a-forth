@@ -14,11 +14,11 @@
 1 constant SIGN_PLUS
 2 constant SIGN_MINUS
 
-32 constant symbolSign_x
-32 constant symbolSign_y
-symbolSign_x 7 + 8 / symbolSign_y * constant symbolSign_sz
+\ 32 constant symbolSign_x
+\ 32 constant symbolSign_y
+\ symbolSign_x 7 + 8 / symbolSign_y * constant symbolSign_sz
 
-create symbolSign
+0 2 32 32  ( asc-min asc-max x y ) fontdef symbolSign
   \   plus
     $00 c, $0F c, $E0 c, $00 c,
     $00 c, $0F c, $E0 c, $00 c,
@@ -87,11 +87,13 @@ create symbolSign
     $00 c, $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c, $00 c,
 
-12 constant symbolSignSm_x
-12 constant symbolSignSm_y
-symbolSignSm_x 7 + 8 / symbolSignSm_y * constant symbolSignSm_sz
+calign
 
-create symboleSignSm
+\ 12 constant symbolSignSm_x
+\ 12 constant symbolSignSm_y
+\ symbolSignSm_x 7 + 8 / symbolSignSm_y * constant symbolSignSm_sz
+
+0 2 12 12  ( asc-min asc-max x y ) fontdef symboleSignSm
   \   plus
     $0E c, $00 c,
     $0E c, $00 c,

@@ -4,11 +4,11 @@
 \ (michael@vondervotteimittiss.com)
 
 
-16 constant digit_sm_x
-32 constant digit_sm_y
-digit_sm_x 7 + 8 / digit_sm_y * constant digit_sm_sz
+\ 16 constant digit_sm_x
+\ 32 constant digit_sm_y
+\ digit_sm_x 7 + 8 / digit_sm_y * constant digit_sm_sz
 
-create digit_sm
+char 0 char 9 16 32 ( asc-min asc-max x y )  fontdef digit_sm
 \  0
   $07 c, $C0 c,
   $0F c, $F0 c,
@@ -349,9 +349,12 @@ create digit_sm
   $07 c, $80 c,
   $0F c, $80 c,
 
-4  constant dp_small_x
-32 constant dp_small_y
-create dp_small
+calign
+
+
+\ 4  constant dp_small_x
+\ 32 constant dp_small_y
+0 0 4 32 fontdef dp_small
   $00 c,
   $00 c,
   $00 c,

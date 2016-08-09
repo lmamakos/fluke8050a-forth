@@ -22,11 +22,11 @@
 10 constant UNIT_nS
 11 constant UNIT_Z
 
-56 constant symbolUnit_x
-41 constant symbolUnit_y
-symbolUnit_x 7 + 8 / symbolUnit_y * constant symbolUnit_sz
+\ 56 constant symbolUnit_x
+\ 41 constant symbolUnit_y
+\ symbolUnit_x 7 + 8 / symbolUnit_y * constant symbolUnit_sz
 
-create symbolUnit
+0  11 56 41 ( asc-min asc-max x y ) fontdef symbolUnit
   \   V
     $3C c, $03 c, $C0 c, $00 c, $00 c, $00 c, $00 c,
     $3C c, $07 c, $80 c, $00 c, $00 c, $00 c, $00 c,
@@ -500,12 +500,13 @@ create symbolUnit
     $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,
     $00 c, $00 c, $00 c, $00 c, $00 c, $00 c, $00 c,
 
+calign
 
-24 constant symbolUnitSmall_x
-21 constant symbolUnitSmall_y
-symbolUnitSmall_x 7 + 8 / symbolUnitSmall_y * constant symbolUnitSmall_sz
+\ 24 constant symbolUnitSmall_x
+\ 21 constant symbolUnitSmall_y
+\ symbolUnitSmall_x 7 + 8 / symbolUnitSmall_y * constant symbolUnitSmall_sz
 
-create symbolUnitSmall
+0 11 24 21  ( asc-min asc-max x y ) fontdef symbolUnitSmall
   \   V
     $00 c, $00 c, $00 c,
     $C1 c, $80 c, $00 c,

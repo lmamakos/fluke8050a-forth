@@ -7,11 +7,11 @@
     c,
 ;
 
-32 constant digits32x64_x
-64 constant digits32x64_y
-digits32x64_x 7 + 8 / digits32x64_y * constant digits32x64_sz
+\ 32 constant digits32x64_x
+\ 64 constant digits32x64_y
+\ digits32x64_x 7 + 8 / digits32x64_y * constant digits32x64_sz
 
-create digits32x64
+char 0 char 9 32 64  ( asc-min asc-max x y ) fontdef digits32x64
 binary
   0000000000001111000000000000 bs,
   0000000000111111110000000000 bs,

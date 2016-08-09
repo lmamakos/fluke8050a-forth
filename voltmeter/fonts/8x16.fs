@@ -1,4 +1,5 @@
-create bmow8x16 
+
+0 127 8 16 ( asc-low asc-high xsize ysize) fontdef bmow8x16
 ( char   0 0x00      ) $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, $a5 c, 
  \ # #  # #
  \ # #  # #
