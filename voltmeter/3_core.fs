@@ -1,22 +1,11 @@
-\ layer "C" - core hardware drivers and librarys
+( layer "C" - core hardware drivers and librarys )
 
 <<<board>>>
 
 compiletoflash
 
-include ../flib/timer-stm32f1.fs
-\ include ../flib/pwm-stm32f1.fs
-\ include ../flib/adc-stm32f1.fs
-include ../flib/ring.fs
-include ../flib/uart2-stm32f1.fs
-include ../flib/uart2-irq-stm32f1.fs
-include ../flib/spi-stm32f1.fs
-
-include tft-ili9341.fs
-include graphics.fs
-
 ( font rendering subroutines )
-include font.fs
+include fontdefs.fs
 
 ( include all the fonts )
 ( include fonts/8x16.fs )
@@ -47,4 +36,4 @@ include fonts/symbolSplash.fs
 include fonts/symbolUnit.fs
 
 
-cornerstone <<<core>>>
+cornerstone <<<fonts>>>

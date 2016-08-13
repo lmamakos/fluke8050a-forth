@@ -7,33 +7,6 @@
 \ initial implementation presumes only fixed with fonts, with contiguous array of glyphs available, though not
 \ covering entire ASCII set
 
-\ --------------------------------------------------------------------------------------------------------
-\ font definition word, to build header
-
- 0 constant fnt-struc-type
- 2 constant fnt-struc-stride
- 4 constant fnt-struc-x-size
- 6 constant fnt-struc-y-size
- 8 constant fnt-struc-ascii-low
-10 constant fnt-struc-ascii-high
-12 constant fnt-struc-bitmap
-
-: fontdef ( ascii-low ascii-high x-size y-size  -- )
-    <builds
-    10  h,          ( font-type )
-    over over       ( ascii-low ascii-high x-size y-size x-size y-size -- )
-    swap 7 + 8 / *  \ number of bytes
-    h,              ( stride)
-    swap h,         ( x-size )
-    h,              ( y-size )
-    swap
-    h,              ( ascii-low )
-    h,              ( ascii-high )
-
-  does>
-;
-
-\ --------------------------------------------------------------------------------------------------------
 
 \ current character rendering position - should probably have x,y refer to baseline rather than top left..
 0 variable fnt-x
@@ -64,9 +37,18 @@
     fnt-current !
 ;
 
+\ change next font rendering position
 : fnt-goto ( x y -- )
     fnt-y !
     fnt-x !
+;
+
+: fnt-blankchar ( )                      \ blank current character position and advance
+    fnt-x @ fnt-y @
+    over fnt-width @ +
+    over fnt-height @ +
+    fillrectbg
+    fnt-width @ fnt-x +!     \ increment to next position
 ;
 
 : fnt-char>glyph ( c -- c-addr )         \ get n'th character glyph bitmap address
@@ -81,16 +63,24 @@
 : fnt-drawbitmap ( c-addr -- )
     fnt-width @ fnt-height @ fnt-x @ fnt-y @ bitmap
     fnt-width @ fnt-x +!     \ increment to next position
-    \ XXX check for wraparound or truncation at end of display?
+                             \ XXX check for wraparound or truncation at end of display?
 ;
 
 : fnt-drawchar ( c -- )
-    fnt-ascii>glyph fnt-drawbitmap
+    dup 0< if
+	fnt-blankchar
+    else
+	fnt-ascii>glyph fnt-drawbitmap
+    then
 ;
 
 \ draw the n'th glyph bitmap
 : fnt-drawglyph ( c -- )
-    fnt-char>glyph fnt-drawbitmap
+    dup 0< if
+	fnt-blankchar
+    else
+	fnt-char>glyph fnt-drawbitmap
+    then
 ;
 
 : fnt-get-first-char ( addr len -- addr   len c ) over c@ ;
@@ -103,4 +93,9 @@
 	    fnt-get-first-char fnt-drawchar fnt-cut-first-char
     repeat
     2drop
+;
+
+\ draw string at "current" position
+: fnt-puts ( addr u -- )
+    fnt-x @ fnt-y @ fnt-drawstring
 ;

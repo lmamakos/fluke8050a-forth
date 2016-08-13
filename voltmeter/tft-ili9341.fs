@@ -101,15 +101,14 @@ $F81F constant PINK
     >spi
     -spi           \ unselect SSL
     TFT-D/C ios!  \ D/CX high - data
-  ;
+;
 
 : tft-data ( u -- )
-    TFT-D/C ios!   \ D/CX low - command
+    TFT-D/C ios!   \ D/CX high - data
     +spi           \ SSEL
     >spi
     -spi           \ unselect SSL
-    TFT-D/C ios!   \ D/CX high - data
- ;
+;
     
 : h>tft ( u -- )
     \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
@@ -182,8 +181,10 @@ TFTHEIGHT variable ili9341_height
 	    TFTWIDTH ili9341_height !
 	    TFTHEIGHT ili9341_width !
 	endof
-    endcase  ;
+    endcase
+;
 
+\ set a window in the display that the following 16 bit pixels values will fill.  
 : setwindow                           \  ( x0 y0 x1 y1 -- )
     >r                                \  ( x0 y0 x1 -- )    (R: y1 -- )
     swap                              \  ( x0 x1 y0 -- )    (R: y1 -- )
@@ -205,6 +206,7 @@ TFTHEIGHT variable ili9341_height
     tft-data                          \ low byte of y1
 
     ILI9341_RAMWR tft-cmd             \ write to ram.. and now something should emit pixel data next
+                                      \ tft-cmd leaves D/C with "data" selected
 ;
 
 
@@ -281,9 +283,40 @@ TFTHEIGHT variable ili9341_height
     drop \ the background color
 ;
     
+\ -----------------------------------------------------------------------------
+\ some graphics utility routines
+\
+: bitmapsize ( x1 y1 x2 y2 -- nbits )
+    rot   -     1+ ( compute y extent )
+    -rot swap - 1+ ( compute x extent )
+    *
+;
+
+\ x1 <= x2 and y1 <= y2
+: fillrect ( x1 y1 x2 y2 color -- )
+    >r            \ squirrel away color
+    2over 2over   \ ( x1 y1 x2 y2 x1 y1 x2 y2 )
+    bitmapsize >r
+    setwindow
+    +spi
+    r> r> swap 0 do
+	dup h>tft
+    loop
+    -spi
+    drop
+;
+: fillrectbg     ( x1 y1 x2 y2 -- )
+    tft-bg @
+    fillrect
+;
+
+: fillrectfg     ( x1 y1 x2 y2 -- )
+    tft-fg @
+    fillrect
+;
+
 : putpixel ( x y -- )  \ set a pixel in display memory
-  over  ( x y x -- )
-  over  ( x y x y -- )
+  2dup  ( x y x y -- )
   setwindow
   tft-fg @ +spi h>tft -spi ;
 

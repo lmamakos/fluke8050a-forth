@@ -1,9 +1,21 @@
-\ Layer 3 - "core2" other core functions
+( Layer 3 - "core2" other core functions )
 
-<<<core>>>
+<<<fonts>>>
 
 compiletoflash
 
+include ../flib/timer-stm32f1.fs
+\ include ../flib/pwm-stm32f1.fs
+\ include ../flib/adc-stm32f1.fs
+include ../flib/ring.fs
+include ../flib/uart2-stm32f1.fs
+include ../flib/uart2-irq-stm32f1.fs
+include ../flib/spi-stm32f1.fs
+
+include tft-ili9341.fs
+include graphics.fs
+
+include font.fs
 
 \ initialize 
 : init
@@ -15,11 +27,10 @@ compiletoflash
 	3 ili9341-setRotation
 	BLACK tft-bg !
 	clear
-	YELLOW tft-bg !   BLACK tft-fg !
-	splashFluke splashFlukeX splashFlukeY 100 100 bitmap
+	NAVY tft-bg ! WHITE tft-fg !  splashFluke splashFlukeX splashFlukeY 100 100 bitmap
 	BLACK tft-bg !
 	CYAN tft-fg !
-	." Application Init" cr
+	." [core2 Application Init]" cr   ." ok." cr
     then
 ;
 
