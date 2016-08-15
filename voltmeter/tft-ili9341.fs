@@ -1,3 +1,5 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
+
 \ tft driver for ILI9341 chip, uses SPI1 hardware
 
 240 constant TFTWIDTH

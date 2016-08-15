@@ -1,3 +1,4 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
 \
 \ device wants SPI data LSB first, on the rising edge of the clock
 \

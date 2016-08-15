@@ -1,3 +1,5 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
+
 \ graphics primitives
 \ adapted from mecrisp-stellaris 2.2.1a (GPL3)
 \ needs these words:

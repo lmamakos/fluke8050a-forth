@@ -1,3 +1,4 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
 
 : bitmap-test 42 ascii>bitpattern 8 8 0 0 bitmap  ;
 : bm ( charoffset -- ) 16 * bmow8x16 + 8 16 0 0 bitmap ;

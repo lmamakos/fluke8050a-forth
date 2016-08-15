@@ -1,3 +1,5 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
+
 \ Louis Mamakos
 \ louie@transsys.com
 \

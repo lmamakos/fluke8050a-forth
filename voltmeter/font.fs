@@ -1,3 +1,5 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
+\
 \ font rendering definitions
 \
 \ Copyright (C) 2016
@@ -68,6 +70,7 @@
 
 : fnt-drawchar ( c -- )
     dup 0< if
+	drop
 	fnt-blankchar
     else
 	fnt-ascii>glyph fnt-drawbitmap
@@ -77,6 +80,7 @@
 \ draw the n'th glyph bitmap
 : fnt-drawglyph ( c -- )
     dup 0< if
+	drop
 	fnt-blankchar
     else
 	fnt-char>glyph fnt-drawbitmap

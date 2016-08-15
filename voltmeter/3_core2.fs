@@ -30,7 +30,8 @@ include font.fs
 	NAVY tft-bg ! WHITE tft-fg !  splashFluke splashFlukeX splashFlukeY 100 100 bitmap
 	BLACK tft-bg !
 	CYAN tft-fg !
-	." [core2 Application Init]" cr   ." ok." cr
+	bmow8x16 fnt-select	s" Louis Mamamkos <louie@transsys.com>"  25 200 fnt-drawstring
+	." [core2 Application Init]" cr  
     then
 ;
 

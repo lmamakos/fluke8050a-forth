@@ -1,3 +1,5 @@
+\ -*- mode: forth; indent-tabs-mode: nil; -*-
+
 \ hardware SPI driver
 
 PA4  variable ssel   \ can be changed at run time
