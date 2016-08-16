@@ -1,6 +1,7 @@
 \ -*- mode: forth; indent-tabs-mode: nil; -*-
 
-( layer "D" - development code )
+( "application" code )
+
 reset
 
 compiletoram
@@ -59,7 +60,8 @@ compiletoram
 0 constant function_REL
 
 
-\ variables associated with captured Fluke 8050A signals
+\ these variables are associated with captured Fluke 8050A signals
+\ minimal processing is done as they are acquired
 0 variable d0  \ 8 - minus, 4 - plus, 2 - dB, 1 - 1
 0 variable d1  \ BCD 
 0 variable d2  \ BCD
@@ -70,12 +72,11 @@ compiletoram
 0 variable fluke_range
 
 0 variable strobe-mask        \ mask of strobes that have been seen
-
 \ debugging variables for tracking display strobe performance
 0 variable last-strobe-time   \ last time a strobe sequence completed
+0 variable current-strobe-time \ just completed strobe time
 0 variable strobe-loss        \ lost strobe signal while sampling data
 0 variable strobe0-loss       \ lost strobe 0 signal while sampling data
-0 variable strobe-multiple    \ one than one strobe apparently asserted
 
 
 : getswitches  ( -- )
@@ -117,36 +118,6 @@ compiletoram
     0= until
 ;
 
-\ generate bit-band address given bit and offset into bitband region
-: _io>bb ( bit offset -- addr )
-    swap dup    ( offset bit bit )
-    io-base rot +
-    $000fffff and 5 lshift  \ offset into bitband region for register
-    swap io# 2 lshift +     \ bit offset
-    $42000000 +             \ base of bitband region
-;
-
-\ generate ARM Cortex bit-band addresses corresponding to bit position in GPIO input register
-: ior>bb  ( pin -- addr ) GPIO.IDR _io>bb ;
-
-\ generate ARM Cortex bit-band addresses corresponding to bit position in GPIO input register
-: iow>bb  ( pin -- addr ) GPIO.ODR _io>bb ;
-
-fluke_st0   ior>bb constant st0_bb
-fluke_st1   ior>bb constant st1_bb
-fluke_st2   ior>bb constant st2_bb
-fluke_st3   ior>bb constant st3_bb
-fluke_st4   ior>bb constant st4_bb
-fluke_w     ior>bb constant w_bb
-fluke_x     ior>bb constant x_bb
-fluke_y     ior>bb constant y_bb
-fluke_z     ior>bb constant z_bb
-fluke_dp    ior>bb constant dp_bb
-fluke_hv    ior>bb constant hv_bb
-fluke_rng_a ior>bb constant rng_c_bb
-fluke_rng_b ior>bb constant rng_c_bb
-fluke_rng_c ior>bb constant rng_c_bb
-
 \ fetch current state of multiplexed display signals.
 : get-signals
     z_bb @                     \ bit 0  ( variable io sum )
@@ -176,11 +147,6 @@ inline ;
 \ be more effective, or having a local loop polling each sequential
 \ strobe signal in succession
 : chkstrobes
-    \ check for simultaneous strobe assertion.  "Shouldn't happen"
-    \ st0_bb @ st1_bb @ + st2_bb @ + st3_bb @ + st4_bb @ +
-    \ 1 > if  1 strobe-multiple +! then
-
-    
     st0_bb wait-strobe strobe-asserted? if
 	get-signals
 	st0_bb @ 0= if 1 strobe-loss +! 1 strobe0-loss +! then
@@ -216,8 +182,9 @@ inline ;
 	$10 strobe-mask @ or strobe-mask !
     then
 ;
-
     
+\ make a pass through and wait for all the digit strobes to
+\ occur
 : getstrobes
     0 strobe-mask !
     begin
@@ -226,15 +193,112 @@ inline ;
     until
 ;
 
+\
+\ -----------------------------------------------------------
+\
+
+: ary <builds 0 do -1 , loop   does> swap cells + ;
+
+-1 constant char-none       \ special value for "blank" character on display
+1 constant sign-plus
+2 constant sign-minus
+
+char-none variable state_sign   \ main display sign
+char-none variable state_rSign  \ relative display sign
+0 variable state_function       \ current function mode
+0 variable state_range
+0 variable state_rel
+0 variable state_relValid
+0 variable state_mode           \ what mode symbol is displayed
+
+
+0 variable redraw
+-1 variable prev_state_function
+-1 variable prev_state_range
+-1 variable prev_state_rel
+-1 variable prev_state_relValid
+-1 variable prev_state_mode
+
+\ display field variables
+-1 variable disp_mainDigits_sign
+5 ary disp_mainDigits
+
+-1 variable disp_relDigits_sign
+5 ary disp_relDigits
+
+-1 variable disp_zDigits_sign
+5 ary disp_zDigits
+
+
+\ display main multimeter measurement digits
+: displayMain
+;
+
+\ display relative offset multimeter digits
+: displayRel
+;
+
+\ display dB/impedence
+: displayZ
+;
+
+\ display multimeter mode (V, ohms, mA, etc.)
+: displayMode
+;
+
+\ display units
+: displayUnit
+;
+
+\ reset/clear display
+: displayClear
+;
+
+
+\ -----------------------------------------------------------
+
+
+: compute-function-range
+    
+;
+
+: compute-update
+    
+;
+
+
+
+0 variable display-update-time
+
+\
+\ -----------------------------------------------------------
+\
 : drawdigit
     \ allow -1 to pass through to render a space
+    \ 15 is also a space/blank on the display
+    dup 15 and 15 = if
+        drop -1
+    then
     dup 0< not if
         15 and [char] 0 +
     then
     fnt-drawchar
 ;
 
+
 : draw-value
+    d0 @ $0c and
+    case
+        0 of -1  endof
+        4 of  0  endof        ( plus )
+        12 of 0  endof        ( plus + minus segments )
+        8 of  1  endof        ( minus )
+    endcase
+    symbolSign fnt-select
+    fnt-drawglyph
+
+    digit_lg fnt-select           
+
     d0 @ 1 and
     dup 0= if
         drop -1
@@ -246,59 +310,54 @@ inline ;
     d4 @ drawdigit
 ;
 
-
-: dscan
-    strobe-loss @
-    50 0 do
-	st0_bb  d0 getdigit
-	st1_bb  d1 getdigit
-	st2_bb  d2 getdigit
-	st3_bb  d3 getdigit
-	st4_bb  d4 getdigit
-	2 2 fnt-goto
-	digit_lg fnt-select
-	draw-value
-    loop
-    ." lost strobes: " 
-    strobe-loss @ swap - . cr
-;
-
-: disp-scan
-    getstrobes
-    getswitches
-
+: disp-update
     2 2 fnt-goto
     digit_lg fnt-select
     draw-value
 ;
 
-
-: fluke-display-time
-    GREEN tft-fg !
-    millis 1000000 mod 0 <# # # # # # #s #>    2 fnt-height @ 2 * 2 +  fnt-drawstring
-;
-
 : status-func.
-    s" Func: "  fnt-puts
+    s" F: "  fnt-puts
     fluke_func @ 0 <# #s #> fnt-puts
     32 fnt-drawchar    32 fnt-drawchar
 ;
 
 : status-range.
-    s" Rng: " fnt-puts
+    s" R: " fnt-puts
     fluke_range @ 0  <# #s #> fnt-puts
     32 fnt-drawchar    32 fnt-drawchar
 ;
+
+: emit-status-digit
+    tft-fg @
+    over
+    $100 and if
+        red tft-fg !
+    then
+    hex
+    swap
+    $ff and 0 <# # #s #> fnt-puts
+    decimal
+    [char] | fnt-drawchar
+    tft-fg !
+;
+
+: status-digits.
+    s" D:" fnt-puts
+    d0 @ emit-status-digit
+    d1 @ emit-status-digit
+    d2 @ emit-status-digit
+    d3 @ emit-status-digit
+    d4 @ emit-status-digit
+;
+
 
 : status-strobes.
     s" StbLoss: " fnt-puts
     strobe-loss @ 0  <# #s #> fnt-puts
     [char] / fnt-drawchar
     strobe0-loss @ 0  <# #s #> fnt-puts
-    [char] / fnt-drawchar
-    strobe-multiple @ 0  <# #s #> fnt-puts
 ;
-
     
 : status-line
     bmow8x16 fnt-select
@@ -306,60 +365,43 @@ inline ;
     white tft-fg !
     status-func.
     status-range.
-    status-strobes.
+    status-digits.
+\    status-strobes.
 ;
 
-: fluke-display
-    begin
-	millis last-strobe-time !
-	2 2 fnt-goto
-	$97ef tft-fg !
-	disp-scan
-
-	BLUE tft-fg !
-	millis last-strobe-time @ - 0 <#  # # # #s #>  2 fnt-height @ 2 +  fnt-drawstring
-	\ fluke-display-time
-        status-line
-	key?
-    until
+: draw-display
+    2 2 fnt-goto
+    $97ef tft-fg !
+    disp-update
+    BLUE tft-fg !
+    current-strobe-time @ last-strobe-time @ - 0 <#  # # # #s #>  2 fnt-height @ 2 +  fnt-drawstring
+    
+    status-line
 ;
 
-: test-strobes
-    begin
-	getstrobes
-        millis last-strobe-time !
-        getstrobes
-	millis dup last-strobe-time @ - .
-        status-line
-	key?
-    until
-;
-
-  0 constant x-min
-319 constant x-max
-  0 constant y-min
-239 constant y-max
-
-: draw-frame
-    x-min y-min
-    x-max y-min 1+    fillrectfg  ( upper-left to upper right)
-
-    x-max 1-  y-min             
-    x-max     y-max   fillrectfg
-
-    x-min     y-max 1-           
-    x-max     y-max   fillrectfg
-
-    x-min     y-min
-    x-min 1+  y-max 1-  fillrectfg
+\ complete a measurement / display cycle
+: fluke-multimeter-display
+    current-strobe-time @ last-strobe-time !
+    getstrobes
+    millis dup current-strobe-time !
+    getswitches
+    compute-update
+    draw-display
+    millis swap - display-update-time !
 ;
     
+: display
+    begin
+        fluke-multimeter-display
+	key?
+    until
+;
+
 : init
     init  ( previous initialization )
     0 0 fnt-goto
     digit_lg fnt-select
     BLUE tft-fg !
-    draw-frame
 ;
 
 init

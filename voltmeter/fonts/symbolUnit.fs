@@ -9,7 +9,7 @@
 \   y offset from Y_DIGIT_SM
 \ #define OFFSET_UNIT_SM 16
 
-0  constant UNIT_NONE
+-1  constant UNIT_NONE
 1  constant UNIT_V
 2  constant UNIT_mV
 3  constant UNIT_microA
@@ -26,7 +26,7 @@
 \ 41 constant symbolUnit_y
 \ symbolUnit_x 7 + 8 / symbolUnit_y * constant symbolUnit_sz
 
-0  11 56 41 ( asc-min asc-max x y ) fontdef symbolUnit
+1 11 56 41 ( asc-min asc-max x y ) fontdef symbolUnit
   \   V
     $3C c, $03 c, $C0 c, $00 c, $00 c, $00 c, $00 c,
     $3C c, $07 c, $80 c, $00 c, $00 c, $00 c, $00 c,
@@ -506,7 +506,7 @@ calign
 \ 21 constant symbolUnitSmall_y
 \ symbolUnitSmall_x 7 + 8 / symbolUnitSmall_y * constant symbolUnitSmall_sz
 
-0 11 24 21  ( asc-min asc-max x y ) fontdef symbolUnitSmall
+1 11 24 21  ( asc-min asc-max x y ) fontdef symbolUnitSmall
   \   V
     $00 c, $00 c, $00 c,
     $C1 c, $80 c, $00 c,

@@ -10,7 +10,7 @@
 
 
 
-0 constant MODE_NONE
+-1 constant MODE_NONE
 1 constant MODE_DC
 2 constant MODE_AC
 3 constant MODE_REL
@@ -19,7 +19,7 @@
 \ 32 constant symbolMode_y
 \ symbolMode_x 7 + 8 / symbolMode_y * constant symbolMode_sz
 
-0 4 40 32  ( asc-min asc-max x y ) fontdef symbolMode
+1 3 40 32  ( asc-min asc-max x y ) fontdef symbolMode
 \   DC 
   $00 c, $00 c, $00 c, $00 c, $00 c,
   $00 c, $00 c, $00 c, $00 c, $00 c,
@@ -128,7 +128,7 @@ calign
 \ 19 constant symbolMode_small_x
 \ 14 constant symbolMode_small_y
 
-0 3 19 14  ( asc-min asc-max x y ) fontdef symboleMode_small
+1 3 19 14  ( asc-min asc-max x y ) fontdef symboleMode_small
 \   DC
     $FC c, $03 c, $80 c,
     $FE c, $07 c, $C0 c,

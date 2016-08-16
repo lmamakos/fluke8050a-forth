@@ -32,6 +32,38 @@ PB13 constant fluke_st2
 PB12 constant fluke_st3
 PB11 constant fluke_st4
 
+
+\ generate bit-band address given bit and offset into bitband region
+: _io>bb ( bit offset -- addr )
+    swap dup    ( offset bit bit )
+    io-base rot +
+    $000fffff and 5 lshift  \ offset into bitband region for register
+    swap io# 2 lshift +     \ bit offset
+    $42000000 +             \ base of bitband region
+;
+
+\ generate ARM Cortex bit-band addresses corresponding to bit position in GPIO input register
+: ior>bb  ( pin -- addr ) GPIO.IDR _io>bb ;
+
+\ generate ARM Cortex bit-band addresses corresponding to bit position in GPIO input register
+: iow>bb  ( pin -- addr ) GPIO.ODR _io>bb ;
+
+fluke_st0   ior>bb constant st0_bb
+fluke_st1   ior>bb constant st1_bb
+fluke_st2   ior>bb constant st2_bb
+fluke_st3   ior>bb constant st3_bb
+fluke_st4   ior>bb constant st4_bb
+fluke_w     ior>bb constant w_bb
+fluke_x     ior>bb constant x_bb
+fluke_y     ior>bb constant y_bb
+fluke_z     ior>bb constant z_bb
+fluke_dp    ior>bb constant dp_bb
+fluke_hv    ior>bb constant hv_bb
+fluke_rng_a ior>bb constant rng_c_bb
+fluke_rng_b ior>bb constant rng_c_bb
+fluke_rng_c ior>bb constant rng_c_bb
+
+
 : fl-input ( pin -- )
   IMODE-FLOAT swap io-mode!
 ;
