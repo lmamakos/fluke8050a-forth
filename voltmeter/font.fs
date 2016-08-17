@@ -45,8 +45,14 @@
     fnt-x !
 ;
 
+\ return current font rendering position (where next character will be rendered)
+: fnt-getpos ( -- x y )
+    fnt-x @
+    fnt-y @
+;
+
 : fnt-blankchar ( )                      \ blank current character position and advance
-    fnt-x @ fnt-y @
+    fnt-getpos
     over fnt-width @ +
     over fnt-height @ +
     fillrectbg
@@ -63,7 +69,7 @@
 ;
 
 : fnt-drawbitmap ( c-addr -- )
-    fnt-width @ fnt-height @ fnt-x @ fnt-y @ bitmap
+    fnt-width @ fnt-height @  fnt-getpos  bitmap
     fnt-width @ fnt-x +!     \ increment to next position
                              \ XXX check for wraparound or truncation at end of display?
 ;
@@ -101,5 +107,5 @@
 
 \ draw string at "current" position
 : fnt-puts ( addr u -- )
-    fnt-x @ fnt-y @ fnt-drawstring
+    fnt-getpos fnt-drawstring
 ;

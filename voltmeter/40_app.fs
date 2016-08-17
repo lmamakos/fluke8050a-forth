@@ -92,40 +92,26 @@ compiletoram
     fluke_range !
 ;
 
-: getdigit ( bb-io variable -- )
-    swap  ( variable bb-io )
-    dup  ( variable io bb-io )
-    begin
-	@ if
-	    ( variable bb-io )
-	    fluke_z io@                     \ bit 0  ( variable io sum )
-	    fluke_y io@       shl +         \ bit 1  ( variable io sum )
-	    fluke_x io@  2 lshift +         \ bit 2  ( variable io sum )
-	    fluke_w io@  3 lshift +         \ bit 3  ( variable io sum )
-	    fluke_dp io@ 8 lshift +         \ bit 4  ( decimal point )
-	    fluke_hv io@ hv !
-	    swap                    ( variable sum bb-io )
-	    @ 0= if
-		1 strobe-loss +!
-	    then
-  	    ( variable sum )
-	    swap !
-	    0
-	else
-	    ( variable bb-io )
-	    dup dup ( variable bb-io bb-io )
-	then
-    0= until
-;
+\ -- NOTE -----------------------------------------------------------------------
+\ constants with "_bb" suffix indicate memory addresses in the "bit-band"
+\ memory region.  Each address is aliased (in this case) to a particular
+\ bit in a peripheral register.  This allows individual bit access through
+\ one memory reference without needing to perform any masking
+\
+\ only GPIO read data register access is defined and used in this application
+\ -------------------------------------------------------------------------------
 
-\ fetch current state of multiplexed display signals.
-: get-signals
-    z_bb @                     \ bit 0  ( variable io sum )
-    y_bb @       shl +         \ bit 1  ( variable io sum )
-    x_bb @  2 lshift +         \ bit 2  ( variable io sum )
-    w_bb @  3 lshift +         \ bit 3  ( variable io sum )
-    dp_bb @ 8 lshift +         \ bit 4  ( decimal point )
-    hv_bb @       hv !         \ high voltage indicator
+\ fetch current state of multiplexed display signals when digit strobe signal fires
+\ This is a fairly timing sensitive process, thus the use of bit-banding to
+\ sample the signals individually and making this word "inline: which bloats out
+\ the chkstrobes word that invokes it, but saves extra call/return..
+: get-digit-data-strobe
+    z_bb  @                     \ bit 0  ( variable io sum )
+    y_bb  @       shl +         \ bit 1  ( variable io sum )
+    x_bb  @  2 lshift +         \ bit 2  ( variable io sum )
+    w_bb  @  3 lshift +         \ bit 3  ( variable io sum )
+    dp_bb @  8 lshift +         \ bit 4  ( decimal point )
+    hv_bb @        hv !         \ high voltage indicator
 inline ;
 
 
@@ -148,43 +134,42 @@ inline ;
 \ strobe signal in succession
 : chkstrobes
     st0_bb wait-strobe strobe-asserted? if
-	get-signals
+	get-digit-data-strobe
 	st0_bb @ 0= if 1 strobe-loss +! 1 strobe0-loss +! then
 	d0 !
 	$01 strobe-mask @ or strobe-mask !
     then
 
     st1_bb wait-strobe strobe-asserted? if
-	get-signals
+	get-digit-data-strobe
 	st1_bb @ 0= if 1 strobe-loss +! then
 	d1 !
 	$02 strobe-mask @ or strobe-mask !
     then
 
     st2_bb wait-strobe strobe-asserted? if
-	get-signals
+	get-digit-data-strobe
 	st2_bb @ 0= if 1 strobe-loss +! then
 	d2 !
 	$04 strobe-mask @ or strobe-mask !
     then
 
     st3_bb wait-strobe strobe-asserted? if
-	get-signals
+	get-digit-data-strobe
 	st3_bb @ 0= if 1 strobe-loss +! then
 	d3 !
 	$08 strobe-mask @ or strobe-mask !
     then
 
     st4_bb wait-strobe strobe-asserted? if
-	get-signals
+	get-digit-data-strobe
 	st4_bb @ 0= if 1 strobe-loss +! then
 	d4 !
 	$10 strobe-mask @ or strobe-mask !
     then
 ;
     
-\ make a pass through and wait for all the digit strobes to
-\ occur
+\ make a pass through and wait for all the digit strobes to occur
 : getstrobes
     0 strobe-mask !
     begin
@@ -276,6 +261,12 @@ char-none variable state_rSign  \ relative display sign
 : drawdigit
     \ allow -1 to pass through to render a space
     \ 15 is also a space/blank on the display
+    dup $ffffff00 and $100 = if  \ is decimal point selected (and not a blank?)
+        dp_lg fnt-select         \ select decimal point "font"
+        1 fnt-drawchar           \ draw it
+        digit_lg fnt-select      \ select large number "font"
+    then
+
     dup 15 and 15 = if
         drop -1
     then
@@ -402,6 +393,7 @@ char-none variable state_rSign  \ relative display sign
     0 0 fnt-goto
     digit_lg fnt-select
     BLUE tft-fg !
+    display
 ;
 
 init
