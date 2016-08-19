@@ -25,9 +25,11 @@ include font.fs
 \ initialize 
 : init
     init     \ hook previous version
-    1000 ms key? if
+    ." [Pause..]"
+    1500 ms key? if
 	." (Common init aborted)"
     else
+	cr
 	tft-init
 	3 ili9341-setRotation
 	BLACK tft-bg !

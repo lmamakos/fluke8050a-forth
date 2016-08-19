@@ -114,7 +114,9 @@ $F81F constant PINK
     
 : h>tft ( u -- )
     \ write half-word (16 bits) to LCD,  assumes TFT-D/C is already set
-    dup 8 rshift >spi  >spi ; 
+    \ and device is selected with +spi active
+    dup 8 rshift >spi  >spi
+; 
 
 BLACK variable tft-bg
 RED   variable tft-fg
@@ -220,16 +222,13 @@ TFTHEIGHT variable ili9341_height
 0 variable bitmap-y
 
 : ili9341-set-pixel ( pixel -- )
-    0<> if
-	\ pixel is turned on
+    if   	\ pixel is turned on
 	tft-fg @
-\	42 emit
-    else
-	\ pixel is turned off
+    else	\ pixel is turned off
 	tft-bg @
-\	$20 emit
     then
-    h>tft  \ push 16 bit pixel value out
+    \ h>tft  \ push 16 bit pixel value out
+    dup 8 rshift >spi >spi   ( manual inline expansion of h>tft, don't know why inline doesn't work )
 ;
 
 : bitmap ( addr xsize-pixels ysize-pixels x-position y-position  -- )
@@ -246,7 +245,6 @@ TFTHEIGHT variable ili9341_height
 
     bitmap-ysize @ 0  do                 \ for each row of pixels
 	\ for each row, always start anew with the next byte in the bitmap
-\ ( XXX )	cr 
 	bitmap-cptr @ c@          \ get byte
 	1 bitmap-cptr +!          \ increment to next byte
 	$80                     \ mask
@@ -265,7 +263,10 @@ TFTHEIGHT variable ili9341_height
 	    shr   \ shift mask bit towards LSB 
 	    rot   ( byte mask pixel )
 
-	    ili9341-set-pixel
+            \	    ili9341-set-pixel
+            if ( pixel on ) tft-fg else ( pixel off ) tft-bg then @
+            dup 8 rshift >spi >spi   ( manual inline expansion of h>tft, don't know why inline doesn't work )
+
 	loop  \ per-colume pixel in row
 	2drop         \ drop byte and last mask
     loop  \ per row
@@ -279,7 +280,9 @@ TFTHEIGHT variable ili9341_height
     tft-bg @
     +spi
     ili9341_width @ ili9341_height @ * 0 do
-	dup h>tft
+        \ strangely, trying to make h>tft "inline" causes a failure
+        \ dup h>tft
+        dup dup 8 rshift >spi >spi
     loop
     -spi
     drop \ the background color
@@ -302,7 +305,8 @@ TFTHEIGHT variable ili9341_height
     setwindow
     +spi
     r> r> swap 0 do
-	dup h>tft
+        \	dup h>tft
+        dup dup 8 rshift >spi >spi
     loop
     -spi
     drop
@@ -318,9 +322,13 @@ TFTHEIGHT variable ili9341_height
 ;
 
 : putpixel ( x y -- )  \ set a pixel in display memory
-  2dup  ( x y x y -- )
-  setwindow
-  tft-fg @ +spi h>tft -spi ;
+    2dup  ( x y x y -- )
+    setwindow
+    tft-fg @
+    +spi
+\    h>tft
+    dup 8 rshift >spi >spi ( manual inline expansion of h>tft )
+    -spi ;
 
 : display ( -- ) ;  \ update tft from display memory (ignored)
 

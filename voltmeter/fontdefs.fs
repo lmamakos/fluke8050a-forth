@@ -18,7 +18,7 @@
 12 constant fnt-struc-bitmap
 
 : fontdef ( ascii-low ascii-high x-size y-size  -- )
-    <builds
+  <builds
     10  h,          ( font-type )
     over over       ( ascii-low ascii-high x-size y-size x-size y-size -- )
     swap 7 + 8 / *  \ number of bytes
@@ -28,7 +28,6 @@
     swap
     h,              ( ascii-low )
     h,              ( ascii-high )
-
   does>
 ;
 

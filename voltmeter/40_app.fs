@@ -182,7 +182,12 @@ inline ;
 \ -----------------------------------------------------------
 \
 
-: ary <builds 0 do -1 , loop   does> swap cells + ;
+: ary
+  <builds
+    0 do -1 , loop
+  does>
+    swap cells +
+;
 
 -1 constant char-none       \ special value for "blank" character on display
 1 constant sign-plus
@@ -204,6 +209,17 @@ char-none variable state_rSign  \ relative display sign
 -1 variable prev_state_relValid
 -1 variable prev_state_mode
 
+
+\ definition word to allocate data that corresponds to a field that will be displayed.
+\ this will probably accrete metadate and stuff over time
+: display-field
+  <builds
+    -1 ,
+  does>
+    \ return address of data item
+;
+
+
 \ display field variables
 -1 variable disp_mainDigits_sign
 5 ary disp_mainDigits
@@ -217,6 +233,7 @@ char-none variable state_rSign  \ relative display sign
 
 \ display main multimeter measurement digits
 : displayMain
+
 ;
 
 \ display relative offset multimeter digits
