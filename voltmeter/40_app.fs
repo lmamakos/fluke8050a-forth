@@ -39,6 +39,7 @@ compiletoram
 1 constant range_200
 7 constant range_2000
 0 constant range_20M
+0 constant range_Z
 2 constant range_2mS
 4 constant range_200nS
 \
@@ -50,15 +51,15 @@ compiletoram
 \ dB      x        H       H       x      6
 \ S       x        L       L       x      0  (also depends on range)
 \ AC      H        x       x       x
-\ REL     x        x       x       L
+\ REL     x        x       x       L      ( 1 not rel, 0 rel )
 4 constant function_v
 2 constant function_mA
 0 constant function_kOhm
 6 constant function_dB
 0 constant function_S
 8 constant function_AC
-0 constant function_REL
-
+1 constant function_notREL
+6 constant function_mask
 
 \ these variables are associated with captured Fluke 8050A signals
 \ minimal processing is done as they are acquired
@@ -77,9 +78,9 @@ compiletoram
 0 variable current-strobe-time \ just completed strobe time
 0 variable strobe-loss        \ lost strobe signal while sampling data
 0 variable strobe0-loss       \ lost strobe 0 signal while sampling data
+-1 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
 
-
-: getswitches  ( -- )
+: get-func-range-switches  ( -- )
     fluke_func_d io@                \ FA 0=DC, 1=AC
     fluke_func_c io@       shl +    \ 
     fluke_func_b io@  2 lshift +
@@ -132,6 +133,12 @@ inline ;
 \ bump a counter if not.  Maybe making this interrupt driven will
 \ be more effective, or having a local loop polling each sequential
 \ strobe signal in succession
+
+\ this logic is going to need to be modified because
+\ not all digits are strobed when in the "set Z (impedence)"
+\ mode.  Interrupt-driven logic with "complete" when
+\ strobe4 fires would indicate a complete pass..?
+
 : chkstrobes
     st0_bb wait-strobe strobe-asserted? if
 	get-digit-data-strobe
@@ -170,7 +177,7 @@ inline ;
 ;
     
 \ make a pass through and wait for all the digit strobes to occur
-: getstrobes
+: get-strobes
     0 strobe-mask !
     begin
 	chkstrobes
@@ -189,20 +196,15 @@ inline ;
     swap cells +
 ;
 
--1 constant char-none       \ special value for "blank" character on display
-1 constant sign-plus
-2 constant sign-minus
+$ff constant char-none       \ special value for "blank" character on display
+$100 constant prefix-decimal-point
 
-char-none variable state_sign   \ main display sign
-char-none variable state_rSign  \ relative display sign
 0 variable state_function       \ current function mode
 0 variable state_range
 0 variable state_rel
 0 variable state_relValid
 0 variable state_mode           \ what mode symbol is displayed
 
-
-0 variable redraw
 -1 variable prev_state_function
 -1 variable prev_state_range
 -1 variable prev_state_rel
@@ -210,120 +212,269 @@ char-none variable state_rSign  \ relative display sign
 -1 variable prev_state_mode
 
 
+\ --------------------------------------------------------------------------------------------
+\
 \ definition word to allocate data that corresponds to a field that will be displayed.
 \ this will probably accrete metadate and stuff over time
+\
 : display-field
   <builds
-    -1 ,
+    -1 ,                \ current value
+    -1 ,                \ previous value
+    WHITE ,             \ color
+    0 c,                \ blink?
+    0 c,
+    0 c,
+    0 c,
   does>
     \ return address of data item
 ;
 
+\ get contents of display field
+: field@ ( field -- value )
+    @
+;
 
-\ display field variables
--1 variable disp_mainDigits_sign
-5 ary disp_mainDigits
+\ set contents of display field
+: field! ( value field -- )
+    !
+;
 
--1 variable disp_relDigits_sign
-5 ary disp_relDigits
+: field-color@ ( field -- foreground-color )
+    2 cells + @
+;
 
--1 variable disp_zDigits_sign
-5 ary disp_zDigits
+: field-color! ( color field -- )
+    2 cells + !
+;
 
+: field-blink@ ( field -- blink-rate )
+    2 cells + 1 + c@
+;
+
+: field-blink! ( blink-rate field -- )
+    2 cells + 1 + c,
+;
+
+    
+\ --------------------------------------------------------------------------------------------
+\  display definitions and stuff
+\
+
+2 constant disp-top             \ top line of display
+$0200 constant disp-bg          \ background color
+WHITE constant disp-fg
+
+1 constant sign-plus
+2 constant sign-minus
+
+char-none variable state_sign   \ main display sign
+char-none variable state_rSign  \ relative display sign
+
+display-field disp-sign
+display-field disp-d0
+display-field disp-d1
+display-field disp-d2
+display-field disp-d3
+display-field disp-d4
+
+\ some intial values used for debugging
+0         disp-d0   field!
+1         disp-d1   field!
+2         disp-d2   field!
+3         disp-d3   field!
+4         disp-d4   field!
+sign-plus disp-sign field!
 
 \ display main multimeter measurement digits
-: displayMain
-
-;
-
-\ display relative offset multimeter digits
-: displayRel
-;
-
-\ display dB/impedence
-: displayZ
-;
-
-\ display multimeter mode (V, ohms, mA, etc.)
-: displayMode
-;
-
-\ display units
-: displayUnit
-;
-
-\ reset/clear display
-: displayClear
-;
-
-
-\ -----------------------------------------------------------
-
-
-: compute-function-range
-    
-;
-
-: compute-update
-    
-;
-
-
-
-0 variable display-update-time
-
-\
-\ -----------------------------------------------------------
-\
-: drawdigit
-    \ allow -1 to pass through to render a space
-    \ 15 is also a space/blank on the display
-    dup $ffffff00 and $100 = if  \ is decimal point selected (and not a blank?)
-        dp_lg fnt-select         \ select decimal point "font"
-        1 fnt-drawchar           \ draw it
-        digit_lg fnt-select      \ select large number "font"
+: dispMainDigit ( digit -- )
+    dup $100 and if
+        \ display leading "." character
+        dp_lg fnt-select
+        1 fnt-drawchar
+        digit_lg fnt-select
     then
 
-    dup 15 and 15 = if
+    $ff and \ strip possible decimal points
+    dup  char-none =
+    over $0f = or if
         drop -1
-    then
-    dup 0< not if
-        15 and [char] 0 +
+    else
+        $0f and [char] 0 +   \ convert to ASCII
     then
     fnt-drawchar
 ;
 
+: display-Main
+    symbolSign fnt-select
+    disp-fg tft-fg !
+    
+    0 disp-top 25 + fnt-goto
+    disp-sign field@ dup char-none = if drop -1 then fnt-drawchar
+    fnt-getpos drop disp-top fnt-goto      \ remove offset for symbol
 
-: draw-value
+    digit_lg fnt-select
+    disp-d0 field@ dispMainDigit
+    disp-d1 field@ dispMainDigit
+    disp-d2 field@ dispMainDigit
+    disp-d3 field@ dispMainDigit
+    disp-d4 field@ dispMainDigit
+;
+
+\ display relative offset multimeter digits
+: display-Rel
+;
+
+\ display dB/impedence
+: display-Z
+;
+
+\ display multimeter mode and units (V, ohms, mA, etc.)
+
+258            constant modeDispMode-x
+disp-top 4 +   constant modeDispMode-y
+
+263            constant modeDispUnit-x
+disp-top 42 +  constant modeDispUnit-y
+display-field disp-mode      3 disp-mode field!
+display-field disp-unit      1 disp-unit field!
+
+: display-ModeUnits
+    \ probably do something about the fg color
+    disp-fg tft-fg !
+    symbolMode fnt-select
+    modeDispMode-x modeDispMode-y fnt-goto
+    disp-mode field@ fnt-drawchar
+
+    \ probably do something about the fg color
+    tft-fg @
+    disp-unit field-color@ tft-fg !
+    symbolUnit fnt-select
+    modeDispUnit-x modeDispUnit-y fnt-goto
+    disp-unit field@ fnt-drawchar
+    tft-fg !
+;
+
+
+: display-Update
+    display-Main
+    display-ModeUnits
+    display-Z
+    display-Rel
+;
+
+\ reset/clear display
+: display-Clear
+    disp-bg tft-bg !
+    clear
+;
+
+
+\ -----------------------------------------------------------
+
+
+$97ef constant color-V
+$fc71 constant color-mA
+$a50a constant color-ohm
+$8410 constant color-sievert
+$8c71 constant color-dB
+$3a99 constant color-z
+$0000 constant color-unknown
+
+: compute-func-kOhm ( -- unit )
+    color-ohm disp-unit field-color!
+    fluke_range @ case
+        range_2mS   of UNIT_mS
+            color-sievert disp-unit field-color! endof
+        range_200nS of UNIT_nS
+            color-sievert disp-unit field-color! endof
+        range_20M   of UNIT_MOhm endof
+        range_0.2   of UNIT_Ohm endof
+        true ?of ( else ) UNIT_kOhm endof
+    endcase
+;
+
+: compute-func-v ( -- unit )
+    color-V disp-unit field-color!
+    fluke_range @ case
+        range_0.2 of UNIT_mV endof
+        range_20M of
+            ( XXX invalid range ) UNIT_V
+            RED disp-unit field-color!
+        endof
+        true ?of ( else ) UNIT_V  endof
+    endcase
+;
+
+: compute-func-mA ( -- unit )
+    color-mA disp-unit field-color!
+    fluke_range @ case
+        range_20M of
+            ( XXX invalid range ) UNIT_mA
+            RED disp-unit field-color!
+        endof
+        range_0.2 of UNIT_microA endof
+        true ?of ( else ) UNIT_mA endof
+    endcase
+;
+
+: compute-func-dB ( -- unit )
+    color-dB disp-unit field-color!
+    fluke_range @  case
+        range_Z of color-sievert  disp-unit field-color! UNIT_Z endof
+        true ?of ( else ) UNIT_dB endof
+    endcase
+;
+
+: compute-function-range
+    fluke_func @ function_AC and if MODE_AC else MODE_DC then   \ determine AC or DC
+    fluke_func @ function_mask and function_kOhm = if drop char-none then \ except if in Ohms, then blank
+    \ XXX also check for units as impedence
+    disp-mode field!
+
+    fluke_func @ function_mask and
+    case
+        function_kOhm of  compute-func-kOhm endof   \ also function_S
+        function_v    of  compute-func-v    endof
+        function_mA   of  compute-func-mA   endof
+        function_dB   of  compute-func-dB   endof
+        true         ?of ( else ) char-none endof   \ default others
+    endcase
+    disp-unit field!
+;
+
+: compute-main-display
     d0 @ $0c and
     case
-        0 of -1  endof
-        4 of  0  endof        ( plus )
-        12 of 0  endof        ( plus + minus segments )
-        8 of  1  endof        ( minus )
+        0 of  char-none  endof
+        4 of  sign-plus  endof        ( plus )
+        12 of sign-plus  endof        ( plus + minus segments )
+        8 of  sign-minus endof        ( minus )
     endcase
-    symbolSign fnt-select
-    fnt-drawglyph
-
-    digit_lg fnt-select           
+    disp-sign field!
 
     d0 @ 1 and
     dup 0= if
-        drop -1
+        drop char-none
     then
-    drawdigit
-    d1 @ drawdigit
-    d2 @ drawdigit
-    d3 @ drawdigit
-    d4 @ drawdigit
+    disp-d0 field!
+    d1 @ disp-d1 field!
+    d2 @ disp-d2 field!
+    d3 @ disp-d3 field!
+    d4 @ disp-d4 field!
 ;
 
-: disp-update
-    2 2 fnt-goto
-    digit_lg fnt-select
-    draw-value
+: compute-update
+    compute-function-range
+    compute-main-display
 ;
 
+0 variable display-update-time
+0 variable #display-updates
+
+\ --------------------------------------------------------------------------------------
+\ status line stuff
+\
 : status-func.
     s" F: "  fnt-puts
     fluke_func @ 0 <# #s #> fnt-puts
@@ -359,58 +510,77 @@ char-none variable state_rSign  \ relative display sign
     d4 @ emit-status-digit
 ;
 
-
 : status-strobes.
     s" StbLoss: " fnt-puts
     strobe-loss @ 0  <# #s #> fnt-puts
     [char] / fnt-drawchar
     strobe0-loss @ 0  <# #s #> fnt-puts
 ;
-    
+
+: status-updates.
+    s" " fnt-puts
+    tft-fg @ tft-bg @
+    #display-updates field@ 1 and
+    if
+        2dup
+        tft-fg ! tft-bg ! 
+    then
+    #display-updates field@ 0 <# #s #> fnt-puts
+    tft-bg ! tft-fg !
+;
+
 : status-line
     bmow8x16 fnt-select
     0 239 16 - fnt-goto
-    white tft-fg !
+    WHITE tft-fg !
     status-func.
     status-range.
     status-digits.
-\    status-strobes.
+    \ status-strobes.
+    status-updates.
 ;
 
-: draw-display
-    2 2 fnt-goto
-    $97ef tft-fg !
-    disp-update
-    BLUE tft-fg !
-    current-strobe-time @ last-strobe-time @ - 0 <#  # # # #s #>  2 fnt-height @ 2 +  fnt-drawstring
-    
-    status-line
-;
+\ --------------------------------------------------------------------------------------
 
 \ complete a measurement / display cycle
 : fluke-multimeter-display
+    #display-updates field@ 1 + #display-updates field!
     current-strobe-time @ last-strobe-time !
-    getstrobes
+    get-strobes
     millis dup current-strobe-time !
-    getswitches
+    get-func-range-switches
     compute-update
-    draw-display
+    display-update
+    debugging-modes if status-line then
     millis swap - display-update-time !
 ;
     
 : display
     begin
+        millis dup current-strobe-time !  last-strobe-time ! 
         fluke-multimeter-display
 	key?
     until
 ;
 
+: display-initialize
+    display-Clear
+    get-func-range-switches
+    compute-update
+    display-Update
+    fluke_func @ function_notREL and 0= if 1 debugging-modes +! then
+;
+
+
 : init
     init  ( previous initialization )
+
+    display-initialize
+
     0 0 fnt-goto
     digit_lg fnt-select
     BLUE tft-fg !
-    display
+\    display
 ;
 
-init
+( until loaded into flash ) init

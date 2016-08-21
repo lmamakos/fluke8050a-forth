@@ -75,7 +75,7 @@
 ;
 
 : fnt-drawchar ( c -- )
-    dup 0< if
+    dup 0< over 255 = or if  \ if negative or char is 255, render blank
 	drop
 	fnt-blankchar
     else
