@@ -23,7 +23,7 @@ include graphics.fs
 include font.fs
 
 \ initialize 
-: init
+: init-35_core
     init     \ hook previous version
     ." [Pause..]"
     1500 ms key? if
@@ -40,6 +40,10 @@ include font.fs
 	bmow8x16 fnt-select	s" Louis Mamamkos <louie@transsys.com>"  25 200 fnt-drawstring
 	." [core2 Application Init]" cr  ." ok." cr
     then
+;
+
+: init
+    init-35_core
 ;
 
 cornerstone <<<core2>>>

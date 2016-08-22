@@ -1,6 +1,6 @@
 ( layer "C" - core hardware drivers and librarys )
 
-<<<board>>>
+<<<always>>>
 
 compiletoflash
 
@@ -18,8 +18,8 @@ include fonts/digit_lg.fs
 ( include fonts/digit_sm.fs )
 include fonts/digit_sm.fs
 
-( include fonts/digit_tiny.fs )
-include fonts/digit_tiny.fs
+\ ( include fonts/digit_tiny.fs )
+\ include fonts/digit_tiny.fs
 
 ( include fonts/symbolMode.fs )
 include fonts/symbolMode.fs

@@ -1,10 +1,8 @@
 \ -*- mode: forth; indent-tabs-mode: nil; -*-
 
 ( "application" code )
+\ reset
 
-reset
-
-compiletoram
 \
 \ most significant digit is either 'blank' for 0 value or 1 for 1 value
 \ rest of digits are value 15 for blank
@@ -199,36 +197,34 @@ inline ;
 $ff constant char-none       \ special value for "blank" character on display
 $100 constant prefix-decimal-point
 
-0 variable state_function       \ current function mode
-0 variable state_range
-0 variable state_rel
-0 variable state_relValid
-0 variable state_mode           \ what mode symbol is displayed
-
--1 variable prev_state_function
--1 variable prev_state_range
--1 variable prev_state_rel
--1 variable prev_state_relValid
--1 variable prev_state_mode
-
-
 \ --------------------------------------------------------------------------------------------
 \
 \ definition word to allocate data that corresponds to a field that will be displayed.
 \ this will probably accrete metadate and stuff over time
 \
+\ this doesnt work because the data constructed in the <builds portion of the definition
+\ ends up in flash when compiletoflash is active.  Since there's nothing clever going on
+\ with the does> bit, just do a quick and dirty alternative
+\
+\ : display-field
+\  <builds
+\    -1 ( initial value )
+\    -2 ( previous value )
+\    WHITE ( default field color )
+\    0  ( other random fields )
+\    4  nvariable 
+\  does>
+\    \ return address of data item
+\ ;
+
 : display-field
-  <builds
-    -1 ,                \ current value
-    -1 ,                \ previous value
-    WHITE ,             \ color
-    0 c,                \ blink?
-    0 c,
-    0 c,
-    0 c,
-  does>
-    \ return address of data item
+    -4       ( random future stuff )
+    WHITE    ( default foreground color for drawing )
+    -2       ( "previous" value )
+    -1       ( "current" value of field )
+    4  nvariable
 ;
+
 
 \ get contents of display field
 : field@ ( field -- value )
@@ -261,9 +257,22 @@ $100 constant prefix-decimal-point
 \  display definitions and stuff
 \
 
-2 constant disp-top             \ top line of display
-$0200 constant disp-bg          \ background color
-WHITE constant disp-fg
+4 constant disp-top             \ top line of display
+
+\ color definitions for various display items
+$0200    constant color-disp-bg          \ background color
+WHITE    constant color-disp-fg          \ main display number colors
+RED      constant color-sep-line-error
+DARKGREY constant color-sep-line
+$97ef    constant color-V        \ unit legend colors
+$fc71    constant color-mA       \ attempts to match color
+$a50a    constant color-ohm      \ on Fluke 8050a front
+$8410    constant color-sievert  \ panel
+$8c71    constant color-dB
+$3a99    constant color-z
+$0000    constant color-unknown  \ XXX
+
+
 
 1 constant sign-plus
 2 constant sign-minus
@@ -271,12 +280,23 @@ WHITE constant disp-fg
 char-none variable state_sign   \ main display sign
 char-none variable state_rSign  \ relative display sign
 
+0 variable  func-range-error           \ some sort of error in mode/range combination
+
+\ main value display digits
 display-field disp-sign
 display-field disp-d0
 display-field disp-d1
 display-field disp-d2
 display-field disp-d3
 display-field disp-d4
+
+\ relative value display digits
+display-field disp-rel-sign
+display-field disp-rel-d0
+display-field disp-rel-d1
+display-field disp-rel-d2
+display-field disp-rel-d3
+display-field disp-rel-d4
 
 \ some intial values used for debugging
 0         disp-d0   field!
@@ -307,7 +327,7 @@ sign-plus disp-sign field!
 
 : display-Main
     symbolSign fnt-select
-    disp-fg tft-fg !
+    color-disp-fg tft-fg !
     
     0 disp-top 25 + fnt-goto
     disp-sign field@ dup char-none = if drop -1 then fnt-drawchar
@@ -336,17 +356,19 @@ disp-top 4 +   constant modeDispMode-y
 
 263            constant modeDispUnit-x
 disp-top 42 +  constant modeDispUnit-y
+
 display-field disp-mode      3 disp-mode field!
 display-field disp-unit      1 disp-unit field!
 
-: display-ModeUnits
-    \ probably do something about the fg color
-    disp-fg tft-fg !
+display-field disp-rel-mode
+display-field disp-rel-unit
+
+: display-ModeUnit
+    color-disp-fg tft-fg !
     symbolMode fnt-select
     modeDispMode-x modeDispMode-y fnt-goto
     disp-mode field@ fnt-drawchar
 
-    \ probably do something about the fg color
     tft-fg @
     disp-unit field-color@ tft-fg !
     symbolUnit fnt-select
@@ -355,31 +377,40 @@ display-field disp-unit      1 disp-unit field!
     tft-fg !
 ;
 
+symbolUnit fnt-select  ( select symbolUnit font so we can extract font height )
+
+10                 constant sepline-x0
+modeDispUnit-y fnt-height @ + 8 + constant sepline-y0
+modeDispUnit-x     constant sepline-x1
+sepline-y0 3 +     constant sepline-y1
+
+: display-separator-line
+    sepline-x0 sepline-y0  ( push two corners  )
+    sepline-x1 sepline-y1  ( on the stack      )
+    func-range-error @ 0= if
+        darkgrey           ( followed by color )
+    else
+        red
+    then
+    fillrect    ( fill rectangle for thin line )
+;
 
 : display-Update
     display-Main
-    display-ModeUnits
+    display-ModeUnit
+    display-separator-line
     display-Z
     display-Rel
 ;
 
 \ reset/clear display
 : display-Clear
-    disp-bg tft-bg !
+    color-disp-bg tft-bg !
     clear
 ;
 
 
 \ -----------------------------------------------------------
-
-
-$97ef constant color-V
-$fc71 constant color-mA
-$a50a constant color-ohm
-$8410 constant color-sievert
-$8c71 constant color-dB
-$3a99 constant color-z
-$0000 constant color-unknown
 
 : compute-func-kOhm ( -- unit )
     color-ohm disp-unit field-color!
@@ -401,6 +432,7 @@ $0000 constant color-unknown
         range_20M of
             ( XXX invalid range ) UNIT_V
             RED disp-unit field-color!
+            1 func-range-error !
         endof
         true ?of ( else ) UNIT_V  endof
     endcase
@@ -412,6 +444,7 @@ $0000 constant color-unknown
         range_20M of
             ( XXX invalid range ) UNIT_mA
             RED disp-unit field-color!
+            1 func-range-error !
         endof
         range_0.2 of UNIT_microA endof
         true ?of ( else ) UNIT_mA endof
@@ -425,6 +458,8 @@ $0000 constant color-unknown
         true ?of ( else ) UNIT_dB endof
     endcase
 ;
+
+0 variable func_REL
 
 : compute-function-range
     fluke_func @ function_AC and if MODE_AC else MODE_DC then   \ determine AC or DC
@@ -441,6 +476,8 @@ $0000 constant color-unknown
         true         ?of ( else ) char-none endof   \ default others
     endcase
     disp-unit field!
+
+    fluke_func @ function_notREL and 0= func_REL !
 ;
 
 : compute-main-display
@@ -464,9 +501,34 @@ $0000 constant color-unknown
     d4 @ disp-d4 field!
 ;
 
+\ figure out what to do about the "REL" relative display
+
+: compute-relative-display
+    func_REL 0= func-range-error 0= and dup  ( split into two ifs to avoid Jump Too Far )
+    if  ( not relative mode and not some error )
+        \ snapshot mode/units
+        disp-unit field@        disp-rel-unit field!
+        disp-unit field-color@  disp-rel-unit field-color!
+        disp-mode field@        disp-rel-mode field!
+        disp-mode field-color@  disp-rel-mode field-color!
+    then
+    if
+        \ snapshot the relevant display digits while not in "relative" mode
+        disp-sign field@  disp-rel-sign field!
+        disp-d0 field@    disp-rel-d0 field!
+        disp-d1 field@    disp-rel-d1 field!
+        disp-d2 field@    disp-rel-d2 field!
+        disp-d3 field@    disp-rel-d3 field!
+        disp-d4 field@    disp-rel-d4 field!
+    then
+;
+
+
 : compute-update
+    0 func-range-error !
     compute-function-range
     compute-main-display
+    compute-relative-display
 ;
 
 0 variable display-update-time
@@ -559,8 +621,7 @@ $0000 constant color-unknown
     begin
         millis dup current-strobe-time !  last-strobe-time ! 
         fluke-multimeter-display
-	key?
-    until
+    key? until
 ;
 
 : display-initialize
@@ -573,14 +634,13 @@ $0000 constant color-unknown
 
 
 : init
-    init  ( previous initialization )
-
-    display-initialize
-
-    0 0 fnt-goto
-    digit_lg fnt-select
-    BLUE tft-fg !
-\    display
+    init-35_core  ( previous initialization )
+    key? 0= if
+        display-initialize
+        display
+    else
+        cr ." [Auto start aborted]" cr
+    then
 ;
 
 ( until loaded into flash ) init
