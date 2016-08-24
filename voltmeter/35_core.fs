@@ -15,7 +15,8 @@ compiletoflash
 \ include ../flib/uart2-stm32f1.fs
 \ include ../flib/uart2-irq-stm32f1.fs
 
-include ../flib/spi-stm32f1.fs
+\\ XXX \\ include ../flib/spi-stm32f1.fs
+include spi-stm32f1.fs  \ include alternative SPI implementation that optimizes transmission only
 
 include tft-ili9341.fs
 include graphics.fs

@@ -189,7 +189,7 @@ TFTHEIGHT variable ili9341_height
 ;
 
 \ set a window in the display that the following 16 bit pixels values will fill.  
-: setwindow                           \  ( x0 y0 x1 y1 -- )
+: old-setwindow                           \  ( x0 y0 x1 y1 -- )
     >r                                \  ( x0 y0 x1 -- )    (R: y1 -- )
     swap                              \  ( x0 x1 y0 -- )    (R: y1 -- )
     r>                                \  ( x0 x1 y0 y1 -- ) (R: -- )
@@ -209,6 +209,35 @@ TFTHEIGHT variable ili9341_height
     dup 8 rshift tft-data             \ high byte of y1 (row)
     tft-data                          \ low byte of y1
 
+    ILI9341_RAMWR tft-cmd             \ write to ram.. and now something should emit pixel data next
+                                      \ tft-cmd leaves D/C with "data" selected
+;
+
+\ set a window in the display that the following 16 bit pixels values will fill.  
+: setwindow                           \  ( x0 y0 x1 y1 -- )
+    >r                                \  ( x0 y0 x1 -- )    (R: y1 -- )
+    swap                              \  ( x0 x1 y0 -- )    (R: y1 -- )
+    r>                                \  ( x0 x1 y0 y1 -- ) (R: -- )
+    2swap                             \  ( y0 y1 x0 x1 -- )
+
+    ILI9341_CASET tft-cmd             \ column address set
+    +spi
+    swap                              \ ( y0 y1 x1 x0 -- )
+    dup 8 rshift >spi                 \ send high byte of x0 (col)
+    >spi                              \ send low byte of x0           ( y0 y1 x1 -- )
+    dup 8 rshift >spi                 \ send high byte of x1 (col)
+    >spi                              \ send low byte of x1
+    -spi
+    
+    ILI9341_PASET tft-cmd             \ row address set  ( y0 y1 -- )
+    +spi
+    swap                              \ ( y1 y0 -- )
+    dup 8 rshift >spi                 \ high byte of y0 (row)
+    >spi                              \ low byte of y0
+    dup 8 rshift >spi                 \ high byte of y1 (row)
+    >spi                              \ low byte of y1
+    -spi
+    
     ILI9341_RAMWR tft-cmd             \ write to ram.. and now something should emit pixel data next
                                       \ tft-cmd leaves D/C with "data" selected
 ;

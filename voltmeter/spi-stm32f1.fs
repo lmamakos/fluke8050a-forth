@@ -17,14 +17,17 @@ $40013000 constant SPI1
      ."  SR " SPI1-SR @ h.4 ;
 
 : +spi ( -- ) ssel @ ioc! ;  \ select SPI
-: -spi ( -- ) ssel @ ios! ;  \ deselect SPI
+: old--spi ( -- ) ssel @ ios! ;  \ deselect SPI
+: -spi ( -- ) begin SPI1-SR @ $80 and 0= until ssel @ ios! ;  \ wait for last byte to complete then deselect SPI
 
 : >spi> ( c -- c )  \ hardware SPI, 8 bits
   SPI1-DR !  begin SPI1-SR @ 1 and until  SPI1-DR @ ;
 
 \ single byte transfers
 : spi> ( -- c ) 0 >spi> ;  \ read byte from SPI
-: >spi ( c -- ) >spi> drop ;  \ write byte to SPI
+: old>spi ( c -- ) >spi> drop ;  \ write byte to SPI
+: >spi ( c -- )  begin	SPI1-SR @ 2 and  until  SPI1-DR ! ;	\ write byte to SPI
+
 
 : spi-init ( -- )  \ set up hardware SPI
   OMODE-PP ssel @ io-mode! -spi
