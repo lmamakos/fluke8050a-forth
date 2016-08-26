@@ -70,6 +70,8 @@
 0 variable fluke_func
 0 variable fluke_range
 
+0 variable unscaled-Display-Value  \ 0 - 19999
+
 0 variable strobe-mask        \ mask of strobes that have been seen
 \ debugging variables for tracking display strobe performance
 0 variable last-strobe-time   \ last time a strobe sequence completed
@@ -262,6 +264,7 @@ $100 constant prefix-decimal-point
 \ color definitions for various display items
 $0200    constant color-disp-bg          \ background color
 WHITE    constant color-disp-fg          \ main display number colors
+WHITE    constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
 $97ef    constant color-V        \ unit legend colors
@@ -395,16 +398,110 @@ sepline-y0 3 +     constant sepline-y1
     fillrect    ( fill rectangle for thin line )
 ;
 
+\ --------------------------------------------------------------------
+
+                         5  constant bar-min-x
+                       300  constant bar-length
+    bar-length bar-min-x +  constant bar-max-x
+                       200  constant bar-y
+                         5  constant bar-thickness
+                     20000  constant maxval
+                  0 maxval  2constant maxval.f
+ 0 bar-length  maxval.f f/  2constant scale-factor.f
+
+: scale-to-bar ( zeroTo2K -- )
+   maxval min   0 max   ( ensure between 0 and maxval )
+   0 swap               ( convert t fixed point )
+   scale-factor.f  f*
+   0,5 d+
+   swap drop
+;
+
+: render-bar ( length -- )
+  maxval min   0 max   ( ensure between 0 and maxval )
+  dup
+  bar-min-x +   bar-y bar-thickness +
+  bar-min-x bar-y
+  2swap color-disp-bar-graph fillrect
+
+  bar-min-x + 1 + bar-y
+  bar-min-x  bar-max-x + bar-y bar-thickness + color-disp-bg fillrect
+;
+
+10 constant #pointers
+0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
+
+: render-pointer ( offset color )
+    swap
+    bmow8x16 fnt-select
+    bar-min-x + 4 ( half char width ) -
+    bar-y 14 -  fnt-goto
+    tft-fg !
+    1 fnt-drawchar
+;
+
+\ 0-63  red   0-63 gree     0-63 blue normalized to..
+\ 5 bits red - 6 bits green - 5 bits blue
+: mkcolor ( r g b -- color )
+    2/ $1f min
+    swap $3f min  5 lshift or
+    swap 2/ $1f min 11 lshift or ;
+
+create pointer-colors
+color-disp-bg h,
+10 10 10 mkcolor h,
+15 15 15 mkcolor h,
+20 20 20 mkcolor h,
+25 25 25 mkcolor h,
+30 30 30 mkcolor h,
+35 35 35 mkcolor h,
+40 40 40 mkcolor h,
+50 50 50 mkcolor h,
+63 63 63 mkcolor h,
+
+
+: shift-pointers ( value )
+    \ move existing pointers down a notch
+    #pointers 1  do
+        i cells old-pointers + @
+        i 1- cells old-pointers + !
+    loop
+
+    \ save new value in newest location
+    #pointers 1- cells old-pointers + !
+
+    \ render all the pointers from oldest to newest
+    #pointers 0 do
+        i cells old-pointers + @ 
+        i 2* pointer-colors + h@
+        render-pointer
+    loop
+;
+
+
+: display-bar
+    unscaled-display-value @ scale-to-bar    shift-pointers \ color-disp-bar-graph render-pointer
+    unscaled-display-value @ scale-to-bar    render-bar
+;
+
+
+\ --------------------------------------------------------------------
+
 : display-Update
     display-Main
     display-ModeUnit
     display-separator-line
     display-Z
     display-Rel
+    display-bar
 ;
 
 \ reset/clear display
 : display-Clear
+    #pointers 0 do  \ clear out old pointer array
+        0 old-pointers i cells + !
+
+    loop
     color-disp-bg tft-bg !
     clear
 ;
@@ -501,6 +598,24 @@ sepline-y0 3 +     constant sepline-y1
     d4 @ disp-d4 field!
 ;
 
+: next-digit
+    $ff and  \ ignore decimal point bit
+    dup char-none = if
+        drop 0
+    then
+    unscaled-display-value @ 10 * + unscaled-display-value !
+;
+
+: compute-bar-length
+    0 unscaled-display-value !
+    disp-d0 field@ next-digit
+    disp-d1 field@ next-digit
+    disp-d2 field@ next-digit
+    disp-d3 field@ next-digit
+    disp-d4 field@ next-digit
+;
+
+
 \ figure out what to do about the "REL" relative display
 
 : compute-relative-display
@@ -528,6 +643,7 @@ sepline-y0 3 +     constant sepline-y1
     0 func-range-error !
     compute-function-range
     compute-main-display
+    compute-bar-length
     compute-relative-display
 ;
 
@@ -617,13 +733,6 @@ sepline-y0 3 +     constant sepline-y1
     millis swap - display-update-time !
 ;
     
-: display
-    begin
-        millis dup current-strobe-time !  last-strobe-time ! 
-        fluke-multimeter-display
-    key? until
-;
-
 : display-initialize
     display-Clear
     get-func-range-switches
@@ -632,6 +741,12 @@ sepline-y0 3 +     constant sepline-y1
     fluke_func @ function_notREL and 0= if 1 debugging-modes +! then
 ;
 
+: display
+    begin
+        millis dup current-strobe-time !  last-strobe-time ! 
+        fluke-multimeter-display
+    key? until
+;
 
 : init
     init-35_core  ( previous initialization )
