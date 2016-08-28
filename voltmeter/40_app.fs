@@ -465,7 +465,7 @@ false variable func_REL-previous
         display-Rel-data
         true func_REL-previous !
     else
-        func_REL-previous if  \ if we just turned off the REL display
+        func_REL-previous @ if  \ if we just turned off the REL display
             display-Rel-clear
             false func_REL-previous !
         then
@@ -510,7 +510,7 @@ false variable func_REL-previous
     1 fnt-drawchar
 ;
 
-\ 0-63  red   0-63 gree     0-63 blue normalized to..
+\ 0-63  red   0-63 green     0-63 blue normalized to..
 \ 5 bits red - 6 bits green - 5 bits blue
 : mkcolor ( r g b -- color )
     2/ $1f min
