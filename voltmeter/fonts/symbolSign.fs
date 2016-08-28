@@ -93,7 +93,7 @@ calign
 \ 12 constant symbolSignSm_y
 \ symbolSignSm_x 7 + 8 / symbolSignSm_y * constant symbolSignSm_sz
 
-1 2 12 12  ( asc-min asc-max x y ) fontdef symboleSignSm
+1 2 12 12  ( asc-min asc-max x y ) fontdef symbolSignSm
   \   plus
     $0E c, $00 c,
     $0E c, $00 c,

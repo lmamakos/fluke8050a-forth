@@ -262,8 +262,11 @@ $100 constant prefix-decimal-point
 4 constant disp-top             \ top line of display
 
 \ color definitions for various display items
-$0200    constant color-disp-bg          \ background color
-WHITE    constant color-disp-fg          \ main display number colors
+$0200    variable color-disp-bg-var      \ background color
+WHITE    variable color-disp-fg-var      \ main display number colors
+YELLOW   variable color-disp-rel-fg-var  \ relative display number colors
+
+
 WHITE    constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
@@ -309,13 +312,16 @@ display-field disp-rel-d4
 4         disp-d4   field!
 sign-plus disp-sign field!
 
+dp_lg      variable dp-font
+digit_lg   variable digit-font
+
 \ display main multimeter measurement digits
-: dispMainDigit ( digit -- )
+: dispDigit ( digit -- )
     dup $100 and if
         \ display leading "." character
-        dp_lg fnt-select
+        dp-font @ fnt-select
         1 fnt-drawchar
-        digit_lg fnt-select
+        digit-font @ fnt-select
     then
 
     $ff and \ strip possible decimal points
@@ -329,23 +335,22 @@ sign-plus disp-sign field!
 ;
 
 : display-Main
+    dp_lg dp-font !
+    digit_lg digit-font !
+    
     symbolSign fnt-select
-    color-disp-fg tft-fg !
+    color-disp-fg-var @ tft-fg !
     
     0 disp-top 25 + fnt-goto
     disp-sign field@ dup char-none = if drop -1 then fnt-drawchar
     fnt-getpos drop disp-top fnt-goto      \ remove offset for symbol
 
-    digit_lg fnt-select
-    disp-d0 field@ dispMainDigit
-    disp-d1 field@ dispMainDigit
-    disp-d2 field@ dispMainDigit
-    disp-d3 field@ dispMainDigit
-    disp-d4 field@ dispMainDigit
-;
-
-\ display relative offset multimeter digits
-: display-Rel
+    digit-font @ fnt-select
+    disp-d0 field@ dispDigit
+    disp-d1 field@ dispDigit
+    disp-d2 field@ dispDigit
+    disp-d3 field@ dispDigit
+    disp-d4 field@ dispDigit
 ;
 
 \ display dB/impedence
@@ -367,7 +372,7 @@ display-field disp-rel-mode
 display-field disp-rel-unit
 
 : display-ModeUnit
-    color-disp-fg tft-fg !
+    color-disp-fg-var @ tft-fg !
     symbolMode fnt-select
     modeDispMode-x modeDispMode-y fnt-goto
     disp-mode field@ fnt-drawchar
@@ -380,12 +385,15 @@ display-field disp-rel-unit
     tft-fg !
 ;
 
+
+\ --------------------------------------------------------------------
+
 symbolUnit fnt-select  ( select symbolUnit font so we can extract font height )
 
-10                 constant sepline-x0
-modeDispUnit-y fnt-height @ + 8 + constant sepline-y0
-modeDispUnit-x     constant sepline-x1
-sepline-y0 3 +     constant sepline-y1
+10                                 constant sepline-x0
+modeDispUnit-y fnt-height @ + 8 +  constant sepline-y0
+ili9341_width @ sepline-x0 -       constant sepline-x1
+sepline-y0 3 +                     constant sepline-y1
 
 : display-separator-line
     sepline-x0 sepline-y0  ( push two corners  )
@@ -396,8 +404,74 @@ sepline-y0 3 +     constant sepline-y1
         red
     then
     fillrect    ( fill rectangle for thin line )
+; \  display-separator-line
+
+\ --------------------------------------------------------------------
+
+0               constant relDisp-x 
+sepline-y1 6 +  constant relDisp-y1     \ line 1
+relDisp-y1 36 + constant relDisp-y2     \ line 2
+
+\ display relative offset multimeter digits
+\ if this was refactored "correctly", display-Main and display-Rel
+\ could be collapsed together..
+: display-Rel-data
+    dp_small  dp-font !
+    digit_sm  digit-font !
+    
+    symbolSignSm fnt-select
+    color-disp-rel-fg-var @ tft-fg !
+
+    0 relDisp-y1 12 + fnt-goto
+
+    disp-rel-sign field@ dup char-none = if drop -1 then fnt-drawchar
+    fnt-getpos drop relDisp-y1 fnt-goto      \ remove offset for symbol
+
+    digit-font @ fnt-select
+    disp-rel-d0 field@ dispDigit
+    disp-rel-d1 field@ dispDigit
+    disp-rel-d2 field@ dispDigit
+    disp-rel-d3 field@ dispDigit
+    disp-rel-d4 field@ dispDigit
+    fnt-blankchar
+
+    symbolMode_small fnt-select
+    fnt-getpos ( save current position on stack )
+    disp-rel-mode field@ fnt-drawchar
+
+    18 + ( bump y position )  fnt-goto
+
+    symbolUnitSmall fnt-select
+    disp-rel-unit field@ fnt-drawchar
+
+    symbolMode fnt-select
+    modeDispMode-x relDisp-y1 fnt-goto
+    MODE_REL fnt-drawchar
+    
+;  \ display-Rel
+
+\ blank relative display area when REL mode is disabled
+: display-Rel-clear
+    relDisp-x relDisp-y1
+    ili9341_width @ relDisp-y2 color-disp-bg-var @ fillrect
 ;
 
+false variable func_REL
+false variable func_REL-previous
+
+: display-Rel
+    \ if REL function is engaged then render the REL data on the display
+    func_REL @ if
+        display-Rel-data
+        true func_REL-previous !
+    else
+        func_REL-previous if  \ if we just turned off the REL display
+            display-Rel-clear
+            false func_REL-previous !
+        then
+    then
+;
+    
 \ --------------------------------------------------------------------
 
                          5  constant bar-min-x
@@ -425,17 +499,13 @@ sepline-y0 3 +     constant sepline-y1
   2swap color-disp-bar-graph fillrect
 
   bar-min-x + 1 + bar-y
-  bar-min-x  bar-max-x + bar-y bar-thickness + color-disp-bg fillrect
+  bar-min-x  bar-max-x + bar-y bar-thickness + color-disp-bg-var @ fillrect
 ;
-
-10 constant #pointers
-0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
 
 : render-pointer ( offset color )
     swap
     bmow8x16 fnt-select
-    bar-min-x + 4 ( half char width ) -
-    bar-y 14 -  fnt-goto
+    bar-min-x + 4 ( half char width ) -    bar-y 4 - fnt-goto
     tft-fg !
     1 fnt-drawchar
 ;
@@ -447,18 +517,19 @@ sepline-y0 3 +     constant sepline-y1
     swap $3f min  5 lshift or
     swap 2/ $1f min 11 lshift or ;
 
-create pointer-colors
-color-disp-bg h,
-10 10 10 mkcolor h,
-15 15 15 mkcolor h,
-20 20 20 mkcolor h,
-25 25 25 mkcolor h,
-30 30 30 mkcolor h,
-35 35 35 mkcolor h,
-40 40 40 mkcolor h,
-50 50 50 mkcolor h,
-63 63 63 mkcolor h,
+create pointer-colors  color-disp-bg-var @ h,
+6 3 0 mkcolor h,   \ orange colors for pointer
+12 6 0 mkcolor h,
+18 9 0 mkcolor h,
+24 12 0 mkcolor h,
+30 15 0 mkcolor h,
+36 18 0 mkcolor h,
+42 22 0 mkcolor h,
+55 28 0 mkcolor h,
+63 32 0 mkcolor h,
 
+10 constant #pointers
+0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
 
 : shift-pointers ( value )
     \ move existing pointers down a notch
@@ -473,17 +544,15 @@ color-disp-bg h,
     \ render all the pointers from oldest to newest
     #pointers 0 do
         i cells old-pointers + @ 
-        i 2* pointer-colors + h@
+        i if  i 2* pointer-colors + h@  else  color-disp-bg-var @  then
         render-pointer
     loop
 ;
 
-
 : display-bar
-    unscaled-display-value @ scale-to-bar    shift-pointers \ color-disp-bar-graph render-pointer
     unscaled-display-value @ scale-to-bar    render-bar
+    unscaled-display-value @ scale-to-bar    shift-pointers \ color-disp-bar-graph render-pointer
 ;
-
 
 \ --------------------------------------------------------------------
 
@@ -502,10 +571,9 @@ color-disp-bg h,
         0 old-pointers i cells + !
 
     loop
-    color-disp-bg tft-bg !
+    color-disp-bg-var @ tft-bg !
     clear
 ;
-
 
 \ -----------------------------------------------------------
 
@@ -555,8 +623,6 @@ color-disp-bg h,
         true ?of ( else ) UNIT_dB endof
     endcase
 ;
-
-0 variable func_REL
 
 : compute-function-range
     fluke_func @ function_AC and if MODE_AC else MODE_DC then   \ determine AC or DC
@@ -619,7 +685,7 @@ color-disp-bg h,
 \ figure out what to do about the "REL" relative display
 
 : compute-relative-display
-    func_REL 0= func-range-error 0= and dup  ( split into two ifs to avoid Jump Too Far )
+    func_REL @ 0= func-range-error @ 0= and dup  ( split into two ifs to avoid Jump Too Far )
     if  ( not relative mode and not some error )
         \ snapshot mode/units
         disp-unit field@        disp-rel-unit field!
@@ -649,20 +715,22 @@ color-disp-bg h,
 
 0 variable display-update-time
 0 variable #display-updates
+0 variable display-cycle-start-micros
+0 variable display-cycle-end-micros
 
 \ --------------------------------------------------------------------------------------
 \ status line stuff
 \
 : status-func.
-    s" F: "  fnt-puts
+    s" F:"  fnt-puts
     fluke_func @ 0 <# #s #> fnt-puts
-    32 fnt-drawchar    32 fnt-drawchar
+    32 fnt-drawchar
 ;
 
 : status-range.
-    s" R: " fnt-puts
+    s" R:" fnt-puts
     fluke_range @ 0  <# #s #> fnt-puts
-    32 fnt-drawchar    32 fnt-drawchar
+    32 fnt-drawchar
 ;
 
 : emit-status-digit
@@ -689,14 +757,15 @@ color-disp-bg h,
 ;
 
 : status-strobes.
-    s" StbLoss: " fnt-puts
+    s" St:" fnt-puts
     strobe-loss @ 0  <# #s #> fnt-puts
     [char] / fnt-drawchar
     strobe0-loss @ 0  <# #s #> fnt-puts
+    32 fnt-drawchar
 ;
 
 : status-updates.
-    s" " fnt-puts
+    s"  U:" fnt-puts
     tft-fg @ tft-bg @
     #display-updates field@ 1 and
     if
@@ -707,14 +776,24 @@ color-disp-bg h,
     tft-bg ! tft-fg !
 ;
 
+: status-render-time.
+    display-cycle-end-micros @ display-cycle-start-micros @ -  0 max
+    ?dup 0<> if
+        s"  Drw:" fnt-puts
+        0 <# # # # # #s #> fnt-puts
+        s" us" fnt-puts
+    then
+;
+
 : status-line
     bmow8x16 fnt-select
     0 239 16 - fnt-goto
     WHITE tft-fg !
     status-func.
     status-range.
-    status-digits.
-    \ status-strobes.
+    \ status-digits.
+    status-strobes.
+    status-render-time.
     status-updates.
 ;
 
@@ -725,12 +804,15 @@ color-disp-bg h,
     #display-updates field@ 1 + #display-updates field!
     current-strobe-time @ last-strobe-time !
     get-strobes
-    millis dup current-strobe-time !
+    millis current-strobe-time !
+
+    micros display-cycle-start-micros !
     get-func-range-switches
     compute-update
     display-update
+    micros display-cycle-end-micros !
+
     debugging-modes if status-line then
-    millis swap - display-update-time !
 ;
     
 : display-initialize
@@ -742,6 +824,7 @@ color-disp-bg h,
 ;
 
 : display
+    ." Multimeter display begin.  Any key to exit" cr
     begin
         millis dup current-strobe-time !  last-strobe-time ! 
         fluke-multimeter-display

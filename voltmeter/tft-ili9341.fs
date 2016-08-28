@@ -165,6 +165,8 @@ $ffff           h,
 
 TFTWIDTH  variable ili9341_width
 TFTHEIGHT variable ili9341_height
+ili9341_width  constant tft-width \ aliases to variable for use outside of module
+ili9341_height constant tft-height
 
 : ili9341-setRotation ( u -- ) \ 0 - 3 for display rotation selection
     ILI9341_MADCTL tft-cmd

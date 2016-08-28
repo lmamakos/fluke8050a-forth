@@ -128,7 +128,7 @@ calign
 \ 19 constant symbolMode_small_x
 \ 14 constant symbolMode_small_y
 
-1 3 19 14  ( asc-min asc-max x y ) fontdef symboleMode_small
+1 3 19 14  ( asc-min asc-max x y ) fontdef symbolMode_small
 \   DC
     $FC c, $03 c, $80 c,
     $FE c, $07 c, $C0 c,
