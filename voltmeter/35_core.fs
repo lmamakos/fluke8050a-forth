@@ -4,16 +4,16 @@
 
 compiletoflash
 
-\ include ../flib/timer-stm32f1.fs
+include ../flib/timer-stm32f1.fs
 \ include ../flib/pwm-stm32f1.fs
 \ include ../flib/adc-stm32f1.fs
 
 \ these may be useful if we ever connect up
 \ the second uart interface for data logging or
 \ similar use
-\ include ../flib/ring.fs
-\ include ../flib/uart2-stm32f1.fs
-\ include ../flib/uart2-irq-stm32f1.fs
+include ../flib/ring.fs
+include ../flib/uart2-stm32f1.fs
+include ../flib/uart2-irq-stm32f1.fs
 
 \\ XXX \\ include ../flib/spi-stm32f1.fs
 include spi-stm32f1.fs  \ include alternative SPI implementation that optimizes transmission only

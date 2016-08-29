@@ -1,16 +1,43 @@
 \ -*- mode: forth; indent-tabs-mode: nil; -*-
+\
+\ Louis Mamakos
+\ louie@transsys.com
+\ 29 August 2016
+\
+\ I saved an enormous amount of time by stealing all sorts of good
+\ ideas (and even some fonts!) from others who have graciously shared
+\ their experiences in blog postings on the Internet.  In particular,
+\ these were extremely valuable resources:
+\
+\     https://sites.google.com/site/kenselectronicsprojects/fluke8050a_display
+\     http://vondervotteimittiss.com/belfry/?p=180
+\
+\ The latter page yielded some wonderful C code and embedded
+\ documentation that I liberally borrowed and incorporated into this
+\ mutant FORTH implementation you see below.
+\
+\ Unlike the C implementation that targeted an Atmel part, I used a
+\ synchronous polling loop approach.  This seems a reasonable approach
+\ given the relatively slow update cycle of the meter (about 420
+\ milliseconds) and where rendering the display takes only 60
+\ milliseconds, leaving plenty of headroom.  It might be nice to run
+\ the FORTH "console" in a separate task to be able to poke around
+\ while the display is running, but the added complexity isn't needed.
 
 ( "application" code )
-\ reset
 
+\ Conventions and hints:
 \
-\ most significant digit is either 'blank' for 0 value or 1 for 1 value
-\ rest of digits are value 15 for blank
+\ most significant digit is either 'blank' for 0 value or 1 for 1
+\ value rest of digits are value 15 for blank
 \
-\ detect overrange configuration, with only leading "1" digit and
-\ 4 following blank digits  -- blank digits are apparently binary 15
+\ stuff to implement:
 \
-\ detect improper switch settings wit 4 decimal points and no digit segments
+\ detect overrange configuration, with only leading "1" digit and 4
+\ following blank digits -- blank digits are apparently binary 15
+\
+\ detect improper switch settings wit 4 decimal points and no digit
+\ segments
 \
 \ polarity sign disabled for Vac, mA and k-ohm functions.
 \
@@ -78,7 +105,21 @@
 0 variable current-strobe-time \ just completed strobe time
 0 variable strobe-loss        \ lost strobe signal while sampling data
 0 variable strobe0-loss       \ lost strobe 0 signal while sampling data
+0 variable strobe1-loss       \ lost strobe 0 signal while sampling data
+0 variable strobe2-loss       \ lost strobe 0 signal while sampling data
+0 variable strobe3-loss       \ lost strobe 0 signal while sampling data
+0 variable strobe4-loss       \ lost strobe 0 signal while sampling data
+
+\ first cell is microsecond counter of when strobe fired, second cell is time
+\ to process
+0 0 2variable strobe0-micros
+0 0 2variable strobe1-micros
+0 0 2variable strobe2-micros
+0 0 2variable strobe3-micros
+0 0 2variable strobe4-micros
+
 -1 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
+
 
 : get-func-range-switches  ( -- )
     fluke_func_d io@                \ FA 0=DC, 1=AC
@@ -94,18 +135,21 @@
 ;
 
 \ -- NOTE -----------------------------------------------------------------------
-\ constants with "_bb" suffix indicate memory addresses in the "bit-band"
-\ memory region.  Each address is aliased (in this case) to a particular
-\ bit in a peripheral register.  This allows individual bit access through
-\ one memory reference without needing to perform any masking
+\ constants with "_bb" suffix indicate memory addresses in the
+\ "bit-band" memory region.  Each address is aliased (in this case) to
+\ a particular bit in a peripheral register.  This allows individual
+\ bit access through one memory reference without needing to perform
+\ any masking
 \
-\ only GPIO read data register access is defined and used in this application
+\ only GPIO read data register access is defined and used in this
+\ application
 \ -------------------------------------------------------------------------------
 
-\ fetch current state of multiplexed display signals when digit strobe signal fires
-\ This is a fairly timing sensitive process, thus the use of bit-banding to
-\ sample the signals individually and making this word "inline: which bloats out
-\ the chkstrobes word that invokes it, but saves extra call/return..
+\ fetch current state of multiplexed display signals when digit strobe
+\ signal fires This is a fairly timing sensitive process, thus the use
+\ of bit-banding to sample the signals individually and making this
+\ word "inline: which bloats out the chkstrobes word that invokes it,
+\ but saves extra call/return..
 : get-digit-data-strobe
     z_bb  @                     \ bit 0  ( variable io sum )
     y_bb  @       shl +         \ bit 1  ( variable io sum )
@@ -122,57 +166,81 @@ inline ;
     until
     inline ;
 
+: null-wait-strobe inline ;
+
 : strobe-asserted? ( strobebb -- t/f)  @ inline ;
 
-\ poll all strobe signals looking for asserted digit strobes
-\ in an effort to make this as efficient as possible, we are checking the
-\ bit-banded aliases of the bit in the GPIO input data registers.  This
-\ avoid having to pass to multiple layers of word calls in the
-\ I/O words to hopefully catch the data while the strobe is valid.
-\ we check to see if the strobe is still asserted afterwards and
-\ bump a counter if not.  Maybe making this interrupt driven will
-\ be more effective, or having a local loop polling each sequential
-\ strobe signal in succession
+: strobe-timestamp ( startmicros tstampvar -- )
+    2dup           ( startmicros tstampvar startmicros tstampvar -- )
+    !              ( startmicros tstampvar -- )
+    1 cells +      ( startmicros tstampvar+4  -- )
+    micros         ( startmicros tstampvar nowmicros )
+    rot -          ( tstamp difference )
+    swap !
+;
 
-\ this logic is going to need to be modified because
-\ not all digits are strobed when in the "set Z (impedence)"
-\ mode.  Interrupt-driven logic with "complete" when
-\ strobe4 fires would indicate a complete pass..?
+
+\ -------------------------------------------------------------
+
+\ poll all strobe signals looking for asserted digit strobes in an
+\ effort to make this as efficient as possible, we are checking the
+\ bit-banded aliases of the bit in the GPIO input data registers.
+\ This avoid having to pass to multiple layers of word calls in the
+\ I/O words to hopefully catch the data while the strobe is valid.  we
+\ check to see if the strobe is still asserted afterwards and bump a
+\ counter if not.  Maybe making this interrupt driven will be more
+\ effective, or having a local loop polling each sequential strobe
+\ signal in succession
+
+\ this logic is going to need to be modified because not all digits
+\ are strobed when in the "set Z (impedence)" mode.  Interrupt-driven
+\ logic with "complete" when strobe4 fires would indicate a complete
+\ pass..?
 
 : chkstrobes
     st0_bb wait-strobe strobe-asserted? if
+        micros
 	get-digit-data-strobe
-	st0_bb @ 0= if 1 strobe-loss +! 1 strobe0-loss +! then
+	st0_bb @ 0= if  1 strobe0-loss +! then
 	d0 !
-	$01 strobe-mask @ or strobe-mask !
+        $01 strobe-mask @ or strobe-mask !
+        strobe0-micros strobe-timestamp
     then
 
     st1_bb wait-strobe strobe-asserted? if
+        micros
 	get-digit-data-strobe
-	st1_bb @ 0= if 1 strobe-loss +! then
+	st1_bb @ 0= if   1 strobe1-loss +! then
 	d1 !
 	$02 strobe-mask @ or strobe-mask !
+        strobe1-micros strobe-timestamp
     then
 
     st2_bb wait-strobe strobe-asserted? if
+        micros
 	get-digit-data-strobe
-	st2_bb @ 0= if 1 strobe-loss +! then
+	st2_bb @ 0= if   1 strobe2-loss +! then
 	d2 !
 	$04 strobe-mask @ or strobe-mask !
+        strobe2-micros strobe-timestamp
     then
 
     st3_bb wait-strobe strobe-asserted? if
+        micros
 	get-digit-data-strobe
-	st3_bb @ 0= if 1 strobe-loss +! then
+	st3_bb @ 0= if   1 strobe3-loss +! then
 	d3 !
 	$08 strobe-mask @ or strobe-mask !
+        strobe3-micros strobe-timestamp
     then
 
     st4_bb wait-strobe strobe-asserted? if
+        micros
 	get-digit-data-strobe
-	st4_bb @ 0= if 1 strobe-loss +! then
+	st4_bb @ 0= if   1 strobe4-loss +! then
 	d4 !
 	$10 strobe-mask @ or strobe-mask !
+        strobe4-micros strobe-timestamp
     then
 ;
     
@@ -181,32 +249,90 @@ inline ;
     0 strobe-mask !
     begin
 	chkstrobes
-	strobe-mask @ $1f =
+\	strobe-mask @ $1f =
+        strobe-mask @ $10 and
     until
+
+    \ "strobe-loss" is not a horrible fatal problem.  This is an event
+    \ where once a digit strobe has been asserted and we start
+    \ processing to collect the display bus signal state, the strobe
+    \ is still not asserted at the end.  The bus may still be stable
+    \ before being set-up for the next digit, but this is an
+    \ indication that the timing budget is running close to or past
+    \ margins.
+    \
+    \ signal strobe width is ~118 microseconds, with about 330
+    \ microseconds between each digit strobe's leading edge being
+    \ asserted
+    \
+    \ sum up the individual digit strobe loss counters into one global
+    \ counter for each reference.
+    
+    strobe0-loss @  strobe1-loss @ +  strobe2-loss @ +  strobe3-loss @ +  strobe4-loss @ +  strobe-loss !
 ;
 
+\ -------------------------------------------------------------
+\ --- some debugging code to characterize signal timing
+\
+: strobe-time-asserted ( strobebb -- duration-us )
+    wait-strobe
+    micros
+    swap
+    begin
+        dup @
+    0= until
+    drop
+    micros swap -
+;
+
+: strobe-time-all cr
+    st0_bb strobe-time-asserted ." Strobe 0 duration: " . cr
+    st1_bb strobe-time-asserted ." Strobe 1 duration: " . cr 
+    st2_bb strobe-time-asserted ." Strobe 2 duration: " . cr 
+    st3_bb strobe-time-asserted ." Strobe 3 duration: " . cr
+    st4_bb strobe-time-asserted ." Strobe 4 duration: " . cr
+;
+
+: strobe-fires cr
+    \ strobe 0 time baseline 
+    get-strobes
+    strobe0-micros @           ." Strobe 0 relative 0 us "       strobe0-micros 1 cells + @ ." svc time " . ." us" cr
+    strobe1-micros @ over -    ." Strobe 1 relative " . ." us "  strobe1-micros 1 cells + @ ." svc time " . ." us" cr
+    strobe2-micros @ over -    ." Strobe 2 relative " . ." us "  strobe2-micros 1 cells + @ ." svc time " . ." us" cr
+    strobe3-micros @ over -    ." Strobe 3 relative " . ." us "  strobe3-micros 1 cells + @ ." svc time " . ." us" cr
+    strobe4-micros @ swap -    ." Strobe 4 relative " . ." us "  strobe4-micros 1 cells + @ ." svc time " . ." us" cr
+;
+
+\ The result is that the strobe pulse-width appears to be about 118 microseconds
+\ strobe-time-all:
+\ Strobe 0 duration: 117
+\ Strobe 1 duration: 118
+\ Strobe 2 duration: 118
+\ Strobe 3 duration: 118
+\ Strobe 4 duration: 118
+\
+\ typical strobe-fires: (after having run a real loop)
+\ Strobe 0 relative 0 us svc time 4 us
+\ Strobe 1 relative 332 us svc time 3 us
+\ Strobe 2 relative 664 us svc time 3 us
+\ Strobe 3 relative 1061 us svc time 4 us
+\ Strobe 4 relative 1393 us svc time 4 us
 \
 \ -----------------------------------------------------------
-\
-
-: ary
-  <builds
-    0 do -1 , loop
-  does>
-    swap cells +
-;
 
 $ff constant char-none       \ special value for "blank" character on display
 $100 constant prefix-decimal-point
 
 \ --------------------------------------------------------------------------------------------
 \
-\ definition word to allocate data that corresponds to a field that will be displayed.
-\ this will probably accrete metadate and stuff over time
+\ definition word to allocate data that corresponds to a field that
+\ will be displayed.  this will probably accrete metadate and stuff
+\ over time
 \
-\ this doesnt work because the data constructed in the <builds portion of the definition
-\ ends up in flash when compiletoflash is active.  Since there's nothing clever going on
-\ with the does> bit, just do a quick and dirty alternative
+\ this doesnt work because the data constructed in the <builds portion
+\ of the definition ends up in flash when compiletoflash is active.
+\ Since there's nothing clever going on with the does> bit, just do a
+\ quick and dirty alternative
 \
 \ : display-field
 \  <builds
@@ -267,7 +393,7 @@ WHITE    variable color-disp-fg-var      \ main display number colors
 YELLOW   variable color-disp-rel-fg-var  \ relative display number colors
 
 
-WHITE    constant color-disp-bar-graph
+ORANGE   constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
 $97ef    constant color-V        \ unit legend colors
@@ -491,7 +617,12 @@ false variable func_REL-previous
    swap drop
 ;
 
-: render-bar ( length -- )
+\ display horizonal bar graph near bottom of screen, scaled from 0 -
+\ 20000 units to correspond to full-scale display.  Show absolute
+\ value, though we might want to do some centered graph when in REL
+\ mode..
+\
+: display-bar ( length -- )
   maxval min   0 max   ( ensure between 0 and maxval )
   dup
   bar-min-x +   bar-y bar-thickness +
@@ -531,7 +662,7 @@ create pointer-colors  color-disp-bg-var @ h,
 10 constant #pointers
 0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
 
-: shift-pointers ( value )
+: display-pointers ( value )
     \ move existing pointers down a notch
     #pointers 1  do
         i cells old-pointers + @
@@ -543,18 +674,33 @@ create pointer-colors  color-disp-bg-var @ h,
 
     \ render all the pointers from oldest to newest
     #pointers 0 do
-        i cells old-pointers + @ 
-        i if  i 2* pointer-colors + h@  else  color-disp-bg-var @  then
-        render-pointer
+        \ render if next pointer position is different location than
+        \ this one, or if current pointer this saves a millisecond or
+        \ two in drawing the overall display
+        i cells old-pointers + @  i 1+ cells old-pointers + @ <>   i #pointers 1- = or if
+            i cells old-pointers + @ 
+            i if  i 2* pointer-colors + h@  else  color-disp-bg-var @  then
+            render-pointer
+        then
     loop
 ;
 
-: display-bar
-    unscaled-display-value @ scale-to-bar    render-bar
-    unscaled-display-value @ scale-to-bar    shift-pointers \ color-disp-bar-graph render-pointer
+\ show bar graph, and then render pointer to current value as well as
+\ a history of fading pointers corresponding to previous 9 readings
+: display-bar-graph
+    unscaled-display-value @ scale-to-bar    display-bar
+    unscaled-display-value @ scale-to-bar    display-pointers 
 ;
 
 \ --------------------------------------------------------------------
+
+\ render the entire display
+\
+\ Right now, we simply render all of the visible display
+\ digits/legends since that happens in about 70 milliseconds.  Meter
+\ display update cycles occur about every 420 milliseconds, and it
+\ takes about 1.5 milliseconds to strobe out all 4 display digits,
+\ leaving plenty of time to draw the display
 
 : display-Update
     display-Main
@@ -562,7 +708,7 @@ create pointer-colors  color-disp-bg-var @ h,
     display-separator-line
     display-Z
     display-Rel
-    display-bar
+    display-bar-graph
 ;
 
 \ reset/clear display
@@ -804,6 +950,38 @@ create pointer-colors  color-disp-bg-var @ h,
     #display-updates field@ 1 + #display-updates field!
     current-strobe-time @ last-strobe-time !
     get-strobes
+
+    \ HORRIBLE HACK
+    \
+    \ Normally, the digit display update timing is a regular ~420ms
+    \ cycle, with a set of 5 digit strobe signals that fire in quick
+    \ succession (asserted ~118 microseconds, with about a 330
+    \ microsecond spacing between the leading edge of each digit
+    \ strobe
+    \
+    \ When in the mode where the Fluke 8050A is cycling through a
+    \ display of impedence values to be selected (when the V and mA
+    \ mode switches are both depressed, and the 20M/Set-Z button is
+    \ depressed), the digit strobe signal firing timine changes
+    \ signficantly to an approximately once per second rate.  There is
+    \ a pattern of 5 digit strobes followed immetiately (610
+    \ microseconds) by another set of 5 digit strobes.  The first set
+    \ appear to be for the last digit display, and the immediately
+    \ following set are for the new value.
+    \
+    \ There's no chance to pick up this second set of strobes.  So the
+    \ hack here, is to toss out the first set of strobes and wait for
+    \ the second set to fire.  Hopefully, we can pick that up quickly
+    \ enough in the ~500 microseconds we have..  If we happen to get
+    \ the timing wrong, and come in here just as the second set is
+    \ firing, then we will wait a second and get the first set, miss
+    \ the immediately following second set and get back into sync.
+    \ The odds are small that the timing would line up like that.
+    
+    disp-unit field@ UNIT_Z = if
+        get-strobes ( again.. )
+    then
+    
     millis current-strobe-time !
 
     micros display-cycle-start-micros !
