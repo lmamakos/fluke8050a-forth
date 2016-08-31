@@ -12,9 +12,11 @@ include ../mlib/hexdump.fs
 include ../flib/io-stm32f1.fs
 include ../flib/hal-stm32f1.fs
 
+\ define some hardware constants specific to the Maple Mini SBC
 PB1 constant LED
-PB0 constant TFT-D/C 
+PB8 constant maple-mini-button
 
+PB0 constant TFT-D/C 
 \ PA4 is default SSEL for LCD display in SPI driver
 
 PB2  constant fluke_dp
@@ -67,14 +69,31 @@ fluke_y     ior>bb constant y_bb
 fluke_z     ior>bb constant z_bb
 fluke_dp    ior>bb constant dp_bb
 fluke_hv    ior>bb constant hv_bb
-fluke_rng_a ior>bb constant rng_c_bb
-fluke_rng_b ior>bb constant rng_c_bb
+fluke_rng_a ior>bb constant rng_a_bb
+fluke_rng_b ior>bb constant rng_b_bb
 fluke_rng_c ior>bb constant rng_c_bb
+
+\ fast LED on/off words, possibly useful for timing experiments.  Use
+\ bit-band acces to speed up operations.  Changing state of LED takes
+\ about 100ns with inlined word definition, which expands to something
+\ like this:
+\  000131BA: F248  movw r0 #8184
+\  000131BC: 1084
+\  000131BE: F2C4  movt r0 #4221
+\  000131C0: 2021
+\  000131C2: 2101  movs r1 #1
+\  000131C4: 6001  str r1 [ r0 #0 ]
+\
+LED         iow>bb constant LED_bbw
+: led-on   1 LED_bbw ! inline ;
+: led-off  0 LED_bbw ! inline ;
 
 
 : fl-input ( pin -- )
   IMODE-FLOAT swap io-mode!
 ;
+
+: button? (  )   maple-mini-button io@ 0<> ; \ check if button on maple mini is pressed
 
 : init-fluke-inputs
   fluke_func_a fl-input   fluke_w fl-input    fluke_rng_a fl-input    fluke_st0 fl-input   fluke_dp fl-input

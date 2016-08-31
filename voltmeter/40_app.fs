@@ -36,15 +36,13 @@
 \ detect overrange configuration, with only leading "1" digit and 4
 \ following blank digits -- blank digits are apparently binary 15
 \
-\ detect improper switch settings wit 4 decimal points and no digit
+\ detect improper switch settings with 4 decimal points and no digit
 \ segments
-\
-\ polarity sign disabled for Vac, mA and k-ohm functions.
 \
 \ detect conductance switch configuration (k-ohm,200,2k, 2000k, 20M)
 \ detect diode test - k-ohm, 2, 200, 20M)
 \
-\ detect dB with impedence switching mode
+\ indicate invalid REL mode after mode change
 \
 
 \ range signal configuration
@@ -119,7 +117,6 @@
 0 0 2variable strobe4-micros
 
 -1 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
-
 
 : get-func-range-switches  ( -- )
     fluke_func_d io@                \ FA 0=DC, 1=AC
@@ -199,6 +196,7 @@ inline ;
 
 : chkstrobes
     st0_bb wait-strobe strobe-asserted? if
+        led-on                                   \ we're now in the thick of it..
         micros
 	get-digit-data-strobe
 	st0_bb @ 0= if  1 strobe0-loss +! then
@@ -392,7 +390,7 @@ $0200    variable color-disp-bg-var      \ background color
 WHITE    variable color-disp-fg-var      \ main display number colors
 YELLOW   variable color-disp-rel-fg-var  \ relative display number colors
 
-
+RED      constant color-disp-over-range
 ORANGE   constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
@@ -413,6 +411,7 @@ char-none variable state_sign   \ main display sign
 char-none variable state_rSign  \ relative display sign
 
 0 variable  func-range-error           \ some sort of error in mode/range combination
+0 variable  disp-over-range            \ input signal is over-range
 
 \ main value display digits
 display-field disp-sign
@@ -441,6 +440,10 @@ sign-plus disp-sign field!
 dp_lg      variable dp-font
 digit_lg   variable digit-font
 
+0 variable #display-updates    \ counter of display updates
+
+: blink? #display-updates @ 1 and 0<> ;
+
 \ display main multimeter measurement digits
 : dispDigit ( digit -- )
     dup $100 and if
@@ -465,7 +468,11 @@ digit_lg   variable digit-font
     digit_lg digit-font !
     
     symbolSign fnt-select
-    color-disp-fg-var @ tft-fg !
+    disp-over-range @   blink? not and if
+        color-disp-over-range tft-fg !
+    else
+        color-disp-fg-var @ tft-fg !
+    then
     
     0 disp-top 25 + fnt-goto
     disp-sign field@ dup char-none = if drop -1 then fnt-drawchar
@@ -477,6 +484,18 @@ digit_lg   variable digit-font
     disp-d2 field@ dispDigit
     disp-d3 field@ dispDigit
     disp-d4 field@ dispDigit
+
+    disp-over-range @ if
+        tft-fg @              \ get current foreground color
+        blink? if             \ to get blinking behavior on alternative updates
+            bmow8x16 fnt-select
+            color-disp-over-range tft-fg !
+            s" INPUT OVER RANGE" 70 disp-top 25 + fnt-drawstring
+        else
+            70 disp-top 25 +  280 disp-top 42 + color-disp-bg-var @ fillrect
+        then
+        tft-fg !
+    then
 ;
 
 \ display dB/impedence
@@ -808,6 +827,13 @@ create pointer-colors  color-disp-bg-var @ h,
     d2 @ disp-d2 field!
     d3 @ disp-d3 field!
     d4 @ disp-d4 field!
+
+    \ see if overrange
+    d0 @ 1 and
+    d1 @ $0f and $0f =  and
+    d2 @ $0f and $0f =  and
+    d3 @ $0f and $0f =  and
+    d4 @ $0f and $0f =  and disp-over-range !
 ;
 
 : next-digit
@@ -860,7 +886,6 @@ create pointer-colors  color-disp-bg-var @ h,
 ;
 
 0 variable display-update-time
-0 variable #display-updates
 0 variable display-cycle-start-micros
 0 variable display-cycle-end-micros
 
@@ -913,12 +938,11 @@ create pointer-colors  color-disp-bg-var @ h,
 : status-updates.
     s"  U:" fnt-puts
     tft-fg @ tft-bg @
-    #display-updates field@ 1 and
-    if
+    blink? if
         2dup
         tft-fg ! tft-bg ! 
     then
-    #display-updates field@ 0 <# #s #> fnt-puts
+    #display-updates @ 0 <# #s #> fnt-puts
     tft-bg ! tft-fg !
 ;
 
@@ -947,7 +971,7 @@ create pointer-colors  color-disp-bg-var @ h,
 
 \ complete a measurement / display cycle
 : fluke-multimeter-display
-    #display-updates field@ 1 + #display-updates field!
+    1 #display-updates +! 
     current-strobe-time @ last-strobe-time !
     get-strobes
 
@@ -991,6 +1015,7 @@ create pointer-colors  color-disp-bg-var @ h,
     micros display-cycle-end-micros !
 
     debugging-modes if status-line then
+    led-off   \ indicate "idle" time now
 ;
     
 : display-initialize
@@ -1002,6 +1027,7 @@ create pointer-colors  color-disp-bg-var @ h,
 ;
 
 : display
+    display-initialize
     ." Multimeter display begin.  Any key to exit" cr
     begin
         millis dup current-strobe-time !  last-strobe-time ! 
@@ -1011,12 +1037,22 @@ create pointer-colors  color-disp-bg-var @ h,
 
 : init
     init-35_core  ( previous initialization )
-    key? 0= if
-        display-initialize
+
+    ." [Pause..]" 2000 ms
+    
+    \ abort automatic start if either an input character is present
+    \ on the serial port, or if the button on the Maple Mini (D32/PB8)
+    \ was pressed
+    
+    key? 0=  ( no serial in? )   button? not and
+    if
         display
     else
-        cr ." [Auto start aborted]" cr
+        s" [Auto start aborted]" 2dup cr type cr
+        bmow8x16 fnt-select
+        white tft-fg ! red tft-bg !
+        100 70 fnt-drawstring
     then
 ;
 
-( until loaded into flash ) init
+init
