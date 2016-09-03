@@ -28,7 +28,7 @@ include font.fs
     init     \ hook previous version
     cr
     tft-init
-    3 ili9341-setRotation
+    1 ili9341-setRotation 
     BLACK tft-bg !
     clear
     NAVY tft-bg ! WHITE tft-fg !  splashFluke splashFlukeX splashFlukeY 100 100 bitmap
