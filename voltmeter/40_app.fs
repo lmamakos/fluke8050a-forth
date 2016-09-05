@@ -117,6 +117,9 @@
 0 0 2variable strobe4-micros
 
 -1 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
+0 variable debugging-flash-free
+0 variable debugging-ram-free
+
 
 : get-func-range-switches  ( -- )
     fluke_func_d io@                \ FA 0=DC, 1=AC
@@ -1068,9 +1071,21 @@ create pointer-colors  color-disp-bg-var @ h,
     key? until
 ;
 
-: init
-    init-35_core  ( previous initialization )
 
+: get-memory-stats  ( -- flashfree ramfree )
+    compiletoram?
+    compiletoflash here
+    swap if compiletoram then
+    flash-kb 1024 * swap -  debugging-flash-free !
+
+    \ compute free RAM as space between HERE (top of dictionary) and
+    \ FLASHVAR-HERE which grows down from the top of RAM
+    flashvar-here here -  debugging-ram-free !
+;
+
+: init
+    get-memory-stats
+    init-35_core  ( previous initialization )
     begin
         key? dup
         if key drop then
