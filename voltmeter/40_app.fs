@@ -988,10 +988,21 @@ create pointer-colors  color-disp-bg-var @ h,
     s" FLUKE 8050A DIGITAL MULTIMETER (TFT LCD)" 0 status-line-1  fnt-drawstring
 ;
 
-: status-line
-    draw-status-lines
+: status-memory
+    0 status-line-2 fnt-goto
+    status-font @ fnt-select
+    color-status-line tft-fg !
+    s" RAM:" fnt-puts
+    debugging-ram-free @ 0 <# #S #> fnt-puts
+    s" | FLASH:" fnt-puts
+    debugging-flash-free @ 0 <# #S #> fnt-puts
+    [char] | fnt-drawchar
+;
 
+: status-line
     bmow8x16 fnt-select
+    status-memory
+
     0 222 fnt-goto
     WHITE tft-fg !
     status-func.
