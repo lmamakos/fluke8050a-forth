@@ -390,6 +390,8 @@ $0200    variable color-disp-bg-var      \ background color
 WHITE    variable color-disp-fg-var      \ main display number colors
 YELLOW   variable color-disp-rel-fg-var  \ relative display number colors
 
+lightgrey constant color-status-line
+
 RED      constant color-disp-over-range
 ORANGE   constant color-disp-bar-graph
 RED      constant color-sep-line-error
@@ -439,6 +441,7 @@ sign-plus disp-sign field!
 
 dp_lg      variable dp-font
 digit_lg   variable digit-font
+bmow8x16   variable status-font
 
 0 variable #display-updates    \ counter of display updates
 
@@ -544,7 +547,7 @@ sepline-y0 3 +                     constant sepline-y1
     sepline-x0 sepline-y0  ( push two corners  )
     sepline-x1 sepline-y1  ( on the stack      )
     func-range-error @ 0= if
-        darkgrey           ( followed by color )
+        disp-unit field-color@  ( followed by color )
     else
         red
     then
@@ -622,7 +625,7 @@ false variable func_REL-previous
                          5  constant bar-min-x
                        300  constant bar-length
     bar-length bar-min-x +  constant bar-max-x
-                       200  constant bar-y
+                       148  constant bar-y
                          5  constant bar-thickness
                      20000  constant maxval
                   0 maxval  2constant maxval.f
@@ -955,9 +958,38 @@ create pointer-colors  color-disp-bg-var @ h,
     then
 ;
 
+0 variable cur-status-line
+: status-draw-fields  ( start-line -- )
+    2 - cur-status-line !
+    0 cur-status-line @ 319 cur-status-line @ color-status-line fillrect
+;
+
+\ 160 - 179
+\ 180 - 199
+\ 200 - 219
+\ 220 - 239
+
+162  dup constant status-line-1
+20 + dup constant status-line-2
+20 + dup constant status-line-3
+20 + dup constant status-line-4
+
+: draw-status-lines
+    status-line-1  status-draw-fields
+    status-line-2  status-draw-fields
+    status-line-3  status-draw-fields
+    status-line-4  status-draw-fields
+
+    status-font @ fnt-select
+    yellow tft-fg !
+    s" FLUKE 8050A DIGITAL MULTIMETER (TFT LCD)" 0 status-line-1  fnt-drawstring
+;
+
 : status-line
+    draw-status-lines
+
     bmow8x16 fnt-select
-    0 239 16 - fnt-goto
+    0 222 fnt-goto
     WHITE tft-fg !
     status-func.
     status-range.
@@ -1024,11 +1056,12 @@ create pointer-colors  color-disp-bg-var @ h,
     compute-update
     display-Update
     fluke_func @ function_notREL and 0= if 1 debugging-modes +! then
+    draw-status-lines
 ;
 
 : display
     display-initialize
-    ." Multimeter display begin.  Any key to exit" cr
+    cr ." Multimeter display begin.  Any key to exit" cr
     begin
         millis dup current-strobe-time !  last-strobe-time ! 
         fluke-multimeter-display
@@ -1038,12 +1071,21 @@ create pointer-colors  color-disp-bg-var @ h,
 : init
     init-35_core  ( previous initialization )
 
-    ." [Pause..]" 2000 ms
+    begin
+        key? dup
+        if key drop then
+        not
+    until
     
+    bmow8x16 fnt-select
+    white tft-fg ! blue tft-bg !
+    s" [Pause..]" 100 70 fnt-drawstring
+    ." [Pause..]" 2000 ms
+
     \ abort automatic start if either an input character is present
     \ on the serial port, or if the button on the Maple Mini (D32/PB8)
     \ was pressed
-    
+
     key? 0=  ( no serial in? )   button? not and
     if
         display
