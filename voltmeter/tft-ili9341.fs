@@ -165,8 +165,6 @@ $ffff           h,
 
 TFTWIDTH  variable ili9341_width
 TFTHEIGHT variable ili9341_height
-ili9341_width  constant tft-width \ aliases to variable for use outside of module
-ili9341_height constant tft-height
 
 : ili9341-setRotation ( u -- ) \ 0 - 3 for display rotation selection
     ILI9341_MADCTL tft-cmd
@@ -188,31 +186,6 @@ ili9341_height constant tft-height
 	    TFTHEIGHT ili9341_width !
 	endof
     endcase
-;
-
-\ set a window in the display that the following 16 bit pixels values will fill.  
-: old-setwindow                           \  ( x0 y0 x1 y1 -- )
-    >r                                \  ( x0 y0 x1 -- )    (R: y1 -- )
-    swap                              \  ( x0 x1 y0 -- )    (R: y1 -- )
-    r>                                \  ( x0 x1 y0 y1 -- ) (R: -- )
-    2swap                             \  ( y0 y1 x0 x1 -- )
-
-    ILI9341_CASET tft-cmd             \ column address set
-    swap                              \ ( y0 y1 x1 x0 -- )
-    dup 8 rshift tft-data             \ send high byte of x0 (col)
-    tft-data                          \ send low byte of x0           ( y0 y1 x1 -- )
-    dup 8 rshift tft-data             \ send high byte of x1 (col)
-    tft-data                          \ send low byte of x1
-    
-    ILI9341_PASET tft-cmd             \ row address set  ( y0 y1 -- )
-    swap                              \ ( y1 y0 -- )
-    dup 8 rshift tft-data             \ high byte of y0 (row)
-    tft-data                          \ low byte of y0
-    dup 8 rshift tft-data             \ high byte of y1 (row)
-    tft-data                          \ low byte of y1
-
-    ILI9341_RAMWR tft-cmd             \ write to ram.. and now something should emit pixel data next
-                                      \ tft-cmd leaves D/C with "data" selected
 ;
 
 \ set a window in the display that the following 16 bit pixels values will fill.  
@@ -244,13 +217,18 @@ ili9341_height constant tft-height
                                       \ tft-cmd leaves D/C with "data" selected
 ;
 
+\ compute size of bitmap in pixel given the corners of the rectangle ( x1 <= x2 ,  y1 <= y2 )
+: bitmapsize ( x1 y1 x2 y2 -- nbits )
+    rot   -     1+ ( compute y extent )
+    -rot swap - 1+ ( compute x extent )
+    *
+;
 
-
-0 variable bitmap-xsize
-0 variable bitmap-ysize
-0 variable bitmap-cptr
-0 variable bitmap-x
-0 variable bitmap-y
+0 variable tft-bitmap-xsize
+0 variable tft-bitmap-ysize
+0 variable tft-bitmap-cptr
+0 variable tft-bitmap-x
+0 variable tft-bitmap-y
 
 : ili9341-set-pixel ( pixel -- )
     if   	\ pixel is turned on
@@ -262,29 +240,34 @@ ili9341_height constant tft-height
     dup 8 rshift >spi >spi   ( manual inline expansion of h>tft, don't know why inline doesn't work )
 ;
 
+\ ---------- various "public" interfaces below
+
+ili9341_width  constant tft-width \ aliases to variable for use outside of module
+ili9341_height constant tft-height
+
 : bitmap ( addr xsize-pixels ysize-pixels x-position y-position  -- )
-    bitmap-y !
-    bitmap-x !
-    bitmap-ysize !
-    bitmap-xsize !
-    bitmap-cptr !
-    bitmap-x @  bitmap-y @  bitmap-x @ bitmap-xsize @ + 1-   bitmap-y @ bitmap-ysize @ + 1-  setwindow
+    tft-bitmap-y !
+    tft-bitmap-x !
+    tft-bitmap-ysize !
+    tft-bitmap-xsize !
+    tft-bitmap-cptr !
+    tft-bitmap-x @  tft-bitmap-y @  tft-bitmap-x @ tft-bitmap-xsize @ + 1-   tft-bitmap-y @ tft-bitmap-ysize @ + 1-  setwindow
 
     +spi
     \ now, iterate over all the bits and write each pixel value out, including
     \ both the foreground and background pixels
 
-    bitmap-ysize @ 0  do                 \ for each row of pixels
+    tft-bitmap-ysize @ 0  do                 \ for each row of pixels
 	\ for each row, always start anew with the next byte in the bitmap
-	bitmap-cptr @ c@          \ get byte
-	1 bitmap-cptr +!          \ increment to next byte
+	tft-bitmap-cptr @ c@          \ get byte
+	1 tft-bitmap-cptr +!          \ increment to next byte
 	$80                     \ mask
 	( byte mask )
-	bitmap-xsize @ 0  do  ( byte mask )
+	tft-bitmap-xsize @ 0  do  ( byte mask )
 	    ?dup 0= if  \ have we walked off the end of the byte?
 		drop    \ byte
-		bitmap-cptr @ c@ ( byte )
-		1 bitmap-cptr +! \ increment to next byte
+		tft-bitmap-cptr @ c@ ( byte )
+		1 tft-bitmap-cptr +! \ increment to next byte
 		$80    \ ( byte mask )
 	    then
 	    ( byte mask )
@@ -322,12 +305,6 @@ ili9341_height constant tft-height
 \ -----------------------------------------------------------------------------
 \ some graphics utility routines
 \
-: bitmapsize ( x1 y1 x2 y2 -- nbits )
-    rot   -     1+ ( compute y extent )
-    -rot swap - 1+ ( compute x extent )
-    *
-;
-
 \ x1 <= x2 and y1 <= y2
 : fillrect ( x1 y1 x2 y2 color -- )
     >r            \ squirrel away color

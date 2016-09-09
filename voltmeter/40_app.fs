@@ -116,7 +116,7 @@
 0 0 2variable strobe3-micros
 0 0 2variable strobe4-micros
 
--1 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
+0 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
 0 variable debugging-flash-free
 0 variable debugging-ram-free
 
@@ -134,6 +134,14 @@
     fluke_range !
 ;
 
+\ if the REL switch is engaged, then set debugging mode.  Probably only
+\ useful to query at power-up or manual display activation for debugging
+: rel-mode-debugging
+    get-func-range-switches
+    fluke_func @ function_notREL and 0= if 1 debugging-modes bis! then
+;
+
+    
 \ -- NOTE -----------------------------------------------------------------------
 \ constants with "_bb" suffix indicate memory addresses in the
 \ "bit-band" memory region.  Each address is aliased (in this case) to
@@ -388,14 +396,21 @@ $100 constant prefix-decimal-point
 
 4 constant disp-top             \ top line of display
 
+\ 0-63  red   0-63 green     0-63 blue normalized to..
+\ 5 bits red - 6 bits green - 5 bits blue
+: mkcolor ( r g b -- color )
+    2/ $1f min
+    swap $3f min  5 lshift or
+    swap 2/ $1f min 11 lshift or ;
+
 \ color definitions for various display items
-$0200    variable color-disp-bg-var      \ background color
-WHITE    variable color-disp-fg-var      \ main display number colors
-YELLOW   variable color-disp-rel-fg-var  \ relative display number colors
+0 10 0   mkcolor variable color-disp-bg-var    \ background color
+63 48 48 mkcolor variable color-disp-fg-var      \ main display number colors
+YELLOW           variable color-disp-rel-fg-var  \ relative display number colors
 
 lightgrey constant color-status-line
 
-RED      constant color-disp-over-range
+MAGENTA  constant color-disp-over-range
 ORANGE   constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
@@ -474,7 +489,11 @@ bmow8x16   variable status-font
     digit_lg digit-font !
     
     symbolSign fnt-select
-    disp-over-range @   blink? not and if
+
+
+    fluke_func @ function_mask and function_kOhm =   blink? or
+    disp-over-range @  and
+    if    \ if overrange and (blink cycle or always for ohms)
         color-disp-over-range tft-fg !
     else
         color-disp-fg-var @ tft-fg !
@@ -491,10 +510,11 @@ bmow8x16   variable status-font
     disp-d3 field@ dispDigit
     disp-d4 field@ dispDigit
 
-    disp-over-range @ if
+    disp-over-range @    fluke_func @ function_mask and function_kOhm <> and
+    if  ( overrange and not resistance scale )
         tft-fg @              \ get current foreground color
         blink? if             \ to get blinking behavior on alternative updates
-            bmow8x16 fnt-select
+            status-font @ fnt-select
             color-disp-over-range tft-fg !
             s" INPUT OVER RANGE" 70 disp-top 25 + fnt-drawstring
         else
@@ -629,7 +649,7 @@ false variable func_REL-previous
                        300  constant bar-length
     bar-length bar-min-x +  constant bar-max-x
                        148  constant bar-y
-                         5  constant bar-thickness
+                         3  constant bar-thickness
                      20000  constant maxval
                   0 maxval  2constant maxval.f
  0 bar-length  maxval.f f/  2constant scale-factor.f
@@ -660,29 +680,23 @@ false variable func_REL-previous
 
 : render-pointer ( offset color )
     swap
-    bmow8x16 fnt-select
-    bar-min-x + 4 ( half char width ) -    bar-y 4 - fnt-goto
+    status-font @ fnt-select
+    bar-min-x + 4 ( half char width ) -    bar-y 6 - fnt-goto
     tft-fg !
     1 fnt-drawchar
 ;
 
-\ 0-63  red   0-63 green     0-63 blue normalized to..
-\ 5 bits red - 6 bits green - 5 bits blue
-: mkcolor ( r g b -- color )
-    2/ $1f min
-    swap $3f min  5 lshift or
-    swap 2/ $1f min 11 lshift or ;
-
-create pointer-colors  color-disp-bg-var @ h,
-6 3 0 mkcolor h,   \ orange colors for pointer
-12 6 0 mkcolor h,
-18 9 0 mkcolor h,
-24 12 0 mkcolor h,
-30 15 0 mkcolor h,
-36 18 0 mkcolor h,
-42 22 0 mkcolor h,
-55 28 0 mkcolor h,
-63 32 0 mkcolor h,
+create pointer-colors
+  color-disp-bg-var @ h,
+   6 3 0  mkcolor h,   \ orange colors for pointer
+  12 6 0  mkcolor h,
+  18 9 0  mkcolor h,
+  24 12 0 mkcolor h,
+  30 15 0 mkcolor h,
+  36 18 0 mkcolor h,
+  42 22 0 mkcolor h,
+  55 28 0 mkcolor h,
+  63 32 0 mkcolor h,
 
 10 constant #pointers
 0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
@@ -985,7 +999,7 @@ create pointer-colors  color-disp-bg-var @ h,
 
     status-font @ fnt-select
     yellow tft-fg !
-    s" FLUKE 8050A DIGITAL MULTIMETER (TFT LCD)" 0 status-line-1  fnt-drawstring
+    s" FLUKE 8050A Digital Multimeter (TFT LCD)" 0 status-line-1  fnt-drawstring
 ;
 
 : status-memory
@@ -1000,7 +1014,7 @@ create pointer-colors  color-disp-bg-var @ h,
 ;
 
 : status-line
-    bmow8x16 fnt-select
+    status-font @ fnt-select
     status-memory
 
     0 222 fnt-goto
@@ -1060,17 +1074,31 @@ create pointer-colors  color-disp-bg-var @ h,
     display-update
     micros display-cycle-end-micros !
 
-    debugging-modes if status-line then
+    debugging-modes @ 0<> if status-line then
     led-off   \ indicate "idle" time now
 ;
-    
+
+\ render the Fluke logo roughly centered between the bar and bottom of display
+: display-fluke-logo
+    tft-fg @
+    tft-bg @
+    WHITE tft-fg !   NAVY  tft-bg !
+    splashFluke splashFlukeX splashFlukeY ( bitmap-addr x-size y-size )
+    tft-width @ 2/ splashFlukeX 2/ -  ( x-position )
+    tft-height @ bar-y 5 + -  splashFlukeY - 2/  bar-y 5 + + ( y-position )
+    bitmap
+    tft-bg !
+    tft-fg !
+;
+
 : display-initialize
     display-Clear
     get-func-range-switches
     compute-update
     display-Update
-    fluke_func @ function_notREL and 0= if 1 debugging-modes +! then
-    draw-status-lines
+    fluke_func @ function_notREL and 0= if 1 debugging-modes bis! then
+    debugging-modes @ if draw-status-lines else display-fluke-logo
+    then
 ;
 
 : display
@@ -1094,32 +1122,63 @@ create pointer-colors  color-disp-bg-var @ h,
     flashvar-here here -  debugging-ram-free !
 ;
 
+: startup-screen-info
+    NAVY tft-bg !
+    WHITE tft-fg !
+    clear
+    display-fluke-logo
+    status-font @ fnt-select
+    YELLOW tft-fg !
+    \ This first text line is of maximum length
+    \  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    s" Fluke 8050A Digital Multimeter (TFT LCD)" 0  0 fnt-drawstring
+    s" Copyright (c) 2016 Louis Mamakos "        0 18 fnt-drawstring
+    s" Louis.Mamakos@transsys.com"               0 36 fnt-drawstring
+    s" info: http://wiki.transsys.com/8050a-tft" 0 54 fnt-drawstring
+    s" Flash free: " 0 72 fnt-drawstring
+    debugging-flash-free @ 0 <# #s #>  fnt-puts
+    s" , RAM free: " fnt-puts
+    debugging-ram-free @ 0 <# #s #> fnt-puts
+;
+
 : init
     get-memory-stats
     init-35_core  ( previous initialization )
+    rel-mode-debugging
+    startup-screen-info
+
+    \ flush UART input buffer
     begin
         key? dup
         if key drop then
         not
     until
     
-    bmow8x16 fnt-select
-    white tft-fg ! blue tft-bg !
-    s" [Pause..]" 100 70 fnt-drawstring
-    ." [Pause..]" 2000 ms
+    debugging-modes @ 0<> if  ( if debugging mode enabled, wait a bit for a input character )
+        status-font @ fnt-select
+        white tft-fg !
+        ." [Pause..]"
+        0 10 do
+            s" Pause.. " 0 tft-height @ 20 - fnt-drawstring   i 0 <# # #s #> fnt-puts
+            i . space
+            1000 ms
+            key? if leave then
+        -1 +loop
+    then
 
     \ abort automatic start if either an input character is present
     \ on the serial port, or if the button on the Maple Mini (D32/PB8)
     \ was pressed
 
-    key? 0=  ( no serial in? )   button? not and
-    if
-        display
-    else
-        s" [Auto start aborted]" 2dup cr type cr
-        bmow8x16 fnt-select
+    debugging-modes @ 0<> key? and  ( if debugging enabled and input character arrived )
+    button? or                      ( or if the button on the microcontroller is pressed )
+    if                              ( then abort the startup )
+        status-font @ fnt-select
         white tft-fg ! red tft-bg !
-        100 70 fnt-drawstring
+        s" [Auto start aborted]" 2dup cr type cr
+        0 tft-height @ 20 - fnt-drawstring
+    else
+        display
     then
 ;
 
