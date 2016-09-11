@@ -134,11 +134,14 @@
     fluke_range !
 ;
 
-\ if the REL switch is engaged, then set debugging mode.  Probably only
-\ useful to query at power-up or manual display activation for debugging
+\ if the REL switch is engaged, then set debugging mode.  Probably
+\ only useful to query at power-up or manual display activation for
+\ debugging also check for SMD button on microcontroller board to
+\ possibly enable debugging post-start-up
 : rel-mode-debugging
     get-func-range-switches
     fluke_func @ function_notREL and 0= if 1 debugging-modes bis! then
+    button?                             if 2 debugging-modes bis! then
 ;
 
     
@@ -662,20 +665,39 @@ false variable func_REL-previous
    swap drop
 ;
 
+
+create dashed-line
+( 160 bits ) $60606060 , $60606060 , $60606060 , $60606060 , $60606060 ,
+( 160 bits ) $60606060 , $60606060 , $60606060 , $60606060 , $60606060 ,
+
+0 variable display-bar-length
+: display-dash  ( used-length -- )
+    dup bar-length swap - 0 > if
+        display-bar-length !
+        dashed-line
+        bar-length display-bar-length @ - ( length )
+        1                             ( height )
+        display-bar-length @ bar-min-x + 1 +   ( start-x )
+        bar-y bar-thickness 2/ +  ( start-y )
+        bitmap
+    else
+        drop
+    then
+;
+
 \ display horizonal bar graph near bottom of screen, scaled from 0 -
 \ 20000 units to correspond to full-scale display.  Show absolute
 \ value, though we might want to do some centered graph when in REL
 \ mode..
-\
 : display-bar ( length -- )
-  maxval min   0 max   ( ensure between 0 and maxval )
-  dup
-  bar-min-x +   bar-y bar-thickness +
-  bar-min-x bar-y
-  2swap color-disp-bar-graph fillrect
+    dup
+    bar-min-x +   bar-y bar-thickness +
+    bar-min-x bar-y
+    2swap color-disp-bar-graph fillrect
 
-  bar-min-x + 1 + bar-y
-  bar-min-x  bar-max-x + bar-y bar-thickness + color-disp-bg-var @ fillrect
+    \ blank remainder of bar
+    bar-min-x + 1 + bar-y
+    bar-min-x  bar-max-x + bar-y bar-thickness + color-disp-bg-var @ fillrect
 ;
 
 : render-pointer ( offset color )
@@ -701,7 +723,7 @@ create pointer-colors
 10 constant #pointers
 0 0 0 0 0 0 0 0 0 0 10 nvariable old-pointers
 
-: display-pointers ( value )
+: display-pointers ( value -- )
     \ move existing pointers down a notch
     #pointers 1  do
         i cells old-pointers + @
@@ -727,8 +749,10 @@ create pointer-colors
 \ show bar graph, and then render pointer to current value as well as
 \ a history of fading pointers corresponding to previous 9 readings
 : display-bar-graph
-    unscaled-display-value @ scale-to-bar    display-bar
-    unscaled-display-value @ scale-to-bar    display-pointers 
+    unscaled-display-value @ scale-to-bar
+    dup display-bar
+    dup display-dash
+    display-pointers 
 ;
 
 \ --------------------------------------------------------------------
@@ -1134,8 +1158,8 @@ create pointer-colors
     s" Fluke 8050A Digital Multimeter (TFT LCD)" 0  0 fnt-drawstring
     s" Copyright (c) 2016 Louis Mamakos "        0 18 fnt-drawstring
     s" Louis.Mamakos@transsys.com"               0 36 fnt-drawstring
-    s" info: http://wiki.transsys.com/8050a-tft" 0 54 fnt-drawstring
-    s" Flash free: " 0 72 fnt-drawstring
+    s" http://wiki.transsys.com/8050a-tft"       0 54 fnt-drawstring
+    s" Flash free: "                             0 72 fnt-drawstring
     debugging-flash-free @ 0 <# #s #>  fnt-puts
     s" , RAM free: " fnt-puts
     debugging-ram-free @ 0 <# #s #> fnt-puts
