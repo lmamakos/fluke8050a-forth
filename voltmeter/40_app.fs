@@ -417,6 +417,7 @@ YELLOW           variable color-disp-rel-fg-var  \ relative display number color
 lightgrey constant color-status-line
 
 MAGENTA  constant color-disp-over-range
+ORANGE   constant color-disp-high-voltage
 ORANGE   constant color-disp-bar-graph
 RED      constant color-sep-line-error
 DARKGREY constant color-sep-line
@@ -502,8 +503,13 @@ bmow8x16   variable status-font
     if    \ if overrange and (blink cycle or always for ohms)
         color-disp-over-range tft-fg !
     else
-        color-disp-fg-var @ tft-fg !
+        hv 0<> if  \ high voltage?
+            color-disp-high-voltage tft-fg !
+        else
+            color-disp-fg-var @ tft-fg !
+        then
     then
+
     
     0 disp-top 25 + fnt-goto
     disp-sign field@ dup char-none = if drop -1 then fnt-drawchar
