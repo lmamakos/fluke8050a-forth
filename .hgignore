@@ -5,3 +5,4 @@ syntax: glob
 .git*
 *.o
 mecrisp-stellaris-*
+version.fs

@@ -24,6 +24,8 @@
 \ the FORTH "console" in a separate task to be able to poke around
 \ while the display is running, but the added complexity isn't needed.
 
+include version.fs
+
 ( "application" code )
 
 \ Conventions and hints:
@@ -1164,23 +1166,30 @@ create pointer-colors
     YELLOW tft-fg !
     \ This first text line is of maximum length
     \  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    s" Fluke 8050A Digital Multimeter (TFT LCD)" 0  0 fnt-drawstring
-    s" Copyright (c) 2016 Louis Mamakos "        0 18 fnt-drawstring
-    s" Louis.Mamakos@transsys.com"               0 36 fnt-drawstring
-    s" http://wiki.transsys.com/8050a-tft"       0 54 fnt-drawstring
-    s" Flash free: "                             0 72 fnt-drawstring
-    debugging-flash-free @ 0 <# #s #>  fnt-puts
-    s" , RAM free: " fnt-puts
-    debugging-ram-free @ 0 <# #s #> fnt-puts
-    s" Flash $000000 - $"                        0 90 fnt-drawstring
+    s" Fluke 8050A Digital Multimeter (TFT LCD)" 2dup 0  0 fnt-drawstring type cr
+    s" Copyright (c) 2016 Louis Mamakos "        2dup 0 18 fnt-drawstring type cr
+    s" Louis.Mamakos@transsys.com"               2dup 0 36 fnt-drawstring type cr
+    s" http://wiki.transsys.com/8050a-tft"       2dup 0 54 fnt-drawstring type cr
+    s" Flash free: "                             2dup 0 72 fnt-drawstring type
+    debugging-flash-free @ 0 <# #s #>  2dup fnt-puts type
+    s" , RAM free: " 2dup fnt-puts type
+    debugging-ram-free @ 0 <# #s #> 2dup fnt-puts type cr
+    s" Flash $000000 - $"                        2dup 0 90 fnt-drawstring type 
     hex
     debugging-flash-last-page @
-    0 <# # # # # # #S #> fnt-puts
+    0 <# # # # # # #S #> 2dup fnt-puts type
     decimal
-    s" , " fnt-puts
+    s" , " 2dup fnt-puts type
     debugging-flash-last-page @ 1+
-    0 <# #S #> fnt-puts
-    s"  bytes" fnt-puts
+    0 <# #S #> 2dup fnt-puts type
+    s"  bytes" 2dup fnt-puts type cr
+
+    s" Vers: "                                   2dup 0 108 fnt-drawstring type
+    version-rev 2@ 2dup fnt-puts type
+    [char] / dup fnt-drawchar emit
+    version-id 2@ 2dup fnt-puts type
+    [char] / dup fnt-drawchar emit
+    version-date 2@ 2dup fnt-puts type cr
 ;
 
 : init
