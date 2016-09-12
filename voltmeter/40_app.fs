@@ -503,7 +503,7 @@ bmow8x16   variable status-font
     if    \ if overrange and (blink cycle or always for ohms)
         color-disp-over-range tft-fg !
     else
-        hv 0<> if  \ high voltage?
+        hv @ 0<> if  \ high voltage?
             color-disp-high-voltage tft-fg !
         else
             color-disp-fg-var @ tft-fg !
