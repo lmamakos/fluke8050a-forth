@@ -1,0 +1,15 @@
+( erase and load all modules )
+
+eraseflash
+
+compiletoflash
+
+include 10_always.fs
+
+include 30_core.fs
+
+include 35_core.fs
+
+compiletoflash
+
+include 40_app.fs

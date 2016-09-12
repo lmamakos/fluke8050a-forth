@@ -119,7 +119,8 @@
 0 variable debugging-modes    \ various debugging bits.   Only boolean at the moment
 0 variable debugging-flash-free
 0 variable debugging-ram-free
-
+0 variable debugging-flash-last-used
+0 variable debugging-flash-last-page
 
 : get-func-range-switches  ( -- )
     fluke_func_d io@                \ FA 0=DC, 1=AC
@@ -1139,6 +1140,13 @@ create pointer-colors
     compiletoram?
     compiletoflash here
     swap if compiletoram then
+    dup debugging-flash-last-used !
+
+    flash-pagesize dup ( pagesize pagesize )
+    debugging-flash-last-used @ + ( pagesize next-page-addr )
+    swap 1- not ( make mask and invert )   ( next-page-addr mask )
+    and 1- debugging-flash-last-page !
+    
     flash-kb 1024 * swap -  debugging-flash-free !
 
     \ compute free RAM as space between HERE (top of dictionary) and
@@ -1147,7 +1155,8 @@ create pointer-colors
 ;
 
 : startup-screen-info
-    NAVY tft-bg !
+    \ NAVY tft-bg !   ( can't be NAVY, looks too much like Windoze BSOD )
+    16 10 0 mkcolor tft-bg !
     WHITE tft-fg !
     clear
     display-fluke-logo
@@ -1163,6 +1172,15 @@ create pointer-colors
     debugging-flash-free @ 0 <# #s #>  fnt-puts
     s" , RAM free: " fnt-puts
     debugging-ram-free @ 0 <# #s #> fnt-puts
+    s" Flash $000000 - $"                        0 90 fnt-drawstring
+    hex
+    debugging-flash-last-page @
+    0 <# # # # # # #S #> fnt-puts
+    decimal
+    s" , " fnt-puts
+    debugging-flash-last-page @ 1+
+    0 <# #S #> fnt-puts
+    s"  bytes" fnt-puts
 ;
 
 : init
