@@ -1138,7 +1138,7 @@ create pointer-colors
 ;
 
 
-: get-memory-stats  ( -- flashfree ramfree )
+: get-memory-stats  ( -- )
     compiletoram?
     compiletoflash here
     swap if compiletoram then
@@ -1149,11 +1149,14 @@ create pointer-colors
     swap 1- not ( make mask and invert )   ( next-page-addr mask )
     and 1- debugging-flash-last-page !
     
-    flash-kb 1024 * swap -  debugging-flash-free !
+    flash-kb 1024 * debugging-flash-last-used @ -  debugging-flash-free !
 
     \ compute free RAM as space between HERE (top of dictionary) and
     \ FLASHVAR-HERE which grows down from the top of RAM
     flashvar-here here -  debugging-ram-free !
+
+    \ set up versions strings
+    __set_version_stuff
 ;
 
 : startup-screen-info
@@ -1234,3 +1237,4 @@ create pointer-colors
 ;
 
 init
+compiletoram
