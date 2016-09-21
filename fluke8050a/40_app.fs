@@ -139,8 +139,8 @@ include version.fs
 
 \ if the REL switch is engaged, then set debugging mode.  Probably
 \ only useful to query at power-up or manual display activation for
-\ debugging also check for SMD button on microcontroller board to
-\ possibly enable debugging post-start-up
+\ debugging.  Also check the pushbutton on the microcontroller board
+\ to possibly enable debugging post-start-up
 : rel-mode-debugging
     get-func-range-switches
     fluke_func @ function_notREL and 0= if 1 debugging-modes bis! then
@@ -171,7 +171,7 @@ include version.fs
     w_bb  @  3 lshift +         \ bit 3  ( variable io sum )
     dp_bb @  8 lshift +         \ bit 4  ( decimal point )
     hv_bb @        hv !         \ high voltage indicator
-inline ;
+    inline ;
 
 
 : wait-strobe ( strobebb -- strobebb )
@@ -264,8 +264,8 @@ inline ;
     0 strobe-mask !
     begin
 	chkstrobes
-\	strobe-mask @ $1f =
-        strobe-mask @ $10 and
+        strobe-mask @ $1f =   ( check for all strobes fired )
+        \ strobe-mask @ $10 and   ( check for last digit strobe fired )
     until
 
     \ "strobe-loss" is not a horrible fatal problem.  This is an event
@@ -281,7 +281,7 @@ inline ;
     \ asserted
     \
     \ sum up the individual digit strobe loss counters into one global
-    \ counter for each reference.
+    \ counter for easy reference.
     
     strobe0-loss @  strobe1-loss @ +  strobe2-loss @ +  strobe3-loss @ +  strobe4-loss @ +  strobe-loss !
 ;

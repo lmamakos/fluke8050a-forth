@@ -4,7 +4,7 @@
 
 compiletoflash
 
-( font rendering subroutines )
+( font definition words )
 include fontdefs.fs
 
 ( include all the fonts )
@@ -35,7 +35,7 @@ include fonts/symbolUnit.fs
 include fonts/symbolSplash.fs
 
 ( include fonts/digits32x64.fs )
-( not presently needed )
+( not presently needed - may want to omit if only 64K of flash available )
 include fonts/digits32x64.fs
 
 cornerstone <<<fonts>>>
