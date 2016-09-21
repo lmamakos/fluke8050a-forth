@@ -13,7 +13,7 @@ compiletoflash
 \ need a custom-built version of mecrisp Forth with a definition
 \ changed and the code all re-assembled.
 include ../mlib/multi.fs
-include ../lib/disassembler-m3.fs
+include ../mlib/disassembler-m3.fs
 include ../mlib/hexdump.fs
 
 \ not happy about needing this here, but debugging code in io-stm32f1.fs wants to know
