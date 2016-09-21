@@ -1,0 +1,11 @@
+To release:
+
+   hg commit
+   # need to create a version.fs file 
+   sh mkversion.sh
+   # commit new version file
+   hg commit
+   hg push
+   # ensure a ref is created
+   hg bookmark -r default master
+   hg push github

@@ -22,3 +22,13 @@ The actual specific "application" code is contained within the
 compiled into RAM rather than flash for very rapid development and
 testing cycles.
 
+There is a binary file, named something like
+
+  `fluke8050a/mecrisp-stellaris-2.2.8-stm32f103xB.bin`
+
+which is an otherwise stock Mecrisp Forth interpreter built for the
+STM32F103xx series devices, except rather than conservatively assuming
+only 64K of flash (smallest available), it has been tweaked to assume
+128K of flash available on the STM32F103xB devices.
+
+
