@@ -1,9 +1,0 @@
-psram 1024 + variable test-addr
-: test
-  31 bit  0 do
-     i 100000 mod 0= if i . ." " then
-     micros dup
-     test-addr @ !
-     test-addr @ @ <> if ." mismatch " then
-     key? if leave then
-  loop ;
