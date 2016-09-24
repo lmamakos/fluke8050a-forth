@@ -1,5 +1,9 @@
 Application code for the Fluke 8050A TFT LCD Display project.
 
+More information on this project on the
+[Project's Wiki](https://wiki.transsys.com/projects:embedded:fluke8050a_display:start),
+which is a work in progress.
+
 The code layout presumes the use of a loader program to upload the
 various Forth files to a running Forth interpreter on the STM32F103
 microcontroller.  The uploader program (in ../upload.py) will perform

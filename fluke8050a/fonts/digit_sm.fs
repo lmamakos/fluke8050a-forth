@@ -2,6 +2,7 @@
 \ Michael Damkier
 \ Hamburg, Germany
 \ (michael@vondervotteimittiss.com)
+\ http://vondervotteimittiss.com/belfry/?p=180
 
 
 \ 16 constant digit_sm_x

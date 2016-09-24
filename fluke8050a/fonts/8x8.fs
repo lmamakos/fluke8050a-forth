@@ -1,4 +1,6 @@
-\ derived from embello/jeelabs 8x8 font in graphics.fs
+\ derived from https://github.com/jeelabs/embello/blob/master/explore/1608-forth/mlib/graphics.fs
+\ 8x8 font.  That file was originally part of the the Mecrisp forth distribution
+\ at http://mecrisp.sourceforge.net/
 
 32 127 8 8  ( asc-min asc-max x y ) fontdef fnt_8x8
 hex

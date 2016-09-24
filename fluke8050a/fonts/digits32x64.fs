@@ -1,3 +1,6 @@
+\ Font derived from https://github.com/jeelabs/embello/blob/master/explore/1608-forth/flib/digits.fs
+\ tweaked to account for byte order considerations based on how we stream bitmaps out the SPI interface
+
 \ 32w x 64h
 
 : bs, ( 32-bit -- )

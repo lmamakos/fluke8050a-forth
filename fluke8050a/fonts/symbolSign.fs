@@ -2,7 +2,7 @@
 \ Michael Damkier
 \ Hamburg, Germany
 \ (michael@vondervotteimittiss.com)
-
+\ http://vondervotteimittiss.com/belfry/?p=180
 
 \ // y offset from Y_DIGIT_LG
 \ #define OFFSET_SIGN_LG 35

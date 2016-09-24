@@ -2,6 +2,7 @@
 \ Michael Damkier
 \ Hamburg, Germany
 \ (michael@vondervotteimittiss.com)
+\ http://vondervotteimittiss.com/belfry/?p=180
 
 \ FLUKE 8050A
 

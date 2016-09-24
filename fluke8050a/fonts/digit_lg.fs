@@ -2,7 +2,7 @@
 \ Michael Damkier
 \ Hamburg, Germany
 \ (michael@vondervotteimittiss.com)
-
+\ http://vondervotteimittiss.com/belfry/?p=180
  
 \ 40 constant digit_lg_x
 \ 80 constant digit_lg_y
