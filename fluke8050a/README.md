@@ -1,7 +1,7 @@
 Application code for the Fluke 8050A TFT LCD Display project.
 
 More information on this project on the
-[Project's Wiki](https://wiki.transsys.com/projects:embedded:fluke8050a_display:start),
+[Project's Wiki](https://madnessinthedarkness.transsys.com/projects:embedded:fluke8050a_display:start),
 which is a work in progress.
 
 The code layout presumes the use of a loader program to upload the
@@ -25,6 +25,12 @@ The actual specific "application" code is contained within the
 **40_app.fs** file.  During development, this can be loaded and
 compiled into RAM rather than flash for very rapid development and
 testing cycles.
+
+This software and hardware configuration is targeted to a Maple Mini
+"clone" board commonly available on EBay, with an STM32F103CBT6
+device with 128KB of Flash and 64KB of RAM.  Deleting some of the
+debugging code (notably the disassembler) will enable it to fit in
+a smaller part with 64KB of Flash.
 
 There is a binary file, named something like
 
