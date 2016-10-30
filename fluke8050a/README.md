@@ -1,7 +1,7 @@
 Application code for the Fluke 8050A TFT LCD Display project.
 
 More information on this project on the
-[Project's Wiki](https://madnessinthedarkness.transsys.com/projects:embedded:fluke8050a_display:start),
+[Project's Wiki](https://madnessinthedarkness.transsys.com/projects:fluke8050a:start),
 which is a work in progress.
 
 The code layout presumes the use of a loader program to upload the
