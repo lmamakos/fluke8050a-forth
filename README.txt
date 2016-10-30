@@ -2,11 +2,11 @@ This contains the files used for the Forth-based alternative display
 for a Fluke 8050A multimeter using a graphical 320x240 color TFT LCD
 display.
 
-For more information, please see https://wiki.transsys.com/fluke8050a-tft
+For more information, please see https://madnessinthedarkness.transsys.com/fluke8050a-tft
 
 Louis Mamakos
 louis.mamakos@transsys.com
-21 September 2016
+30 October 2016
 
 Files in this repository:
 .hg/                   - Mercurial metadata
