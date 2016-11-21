@@ -415,7 +415,8 @@ $100 constant prefix-decimal-point
 YELLOW           variable color-disp-rel-fg-var  \ relative display number colors
 
 lightgrey constant color-status-line
-
+PURPLE   constant color-min
+RED      constant color-max
 MAGENTA  constant color-disp-over-range
 ORANGE   constant color-disp-high-voltage
 ORANGE   constant color-disp-bar-graph
@@ -463,6 +464,43 @@ display-field disp-rel-d4
 3         disp-d3   field!
 4         disp-d4   field!
 sign-plus disp-sign field!
+
+\ minimum/maximum display variables
+\ these variable are signed representation of display units, used to compute
+0 variable disp-value
+0 variable min-disp-value
+0 variable max-disp-value
+0 variable last_func         \ when switching function or range, reset min/max
+0 variable last_range
+
+display-field min-disp-sign
+display-field min-disp-d0
+display-field min-disp-d1
+display-field min-disp-d2
+display-field min-disp-d3
+display-field min-disp-d4
+
+display-field max-disp-sign
+display-field max-disp-d0
+display-field max-disp-d1
+display-field max-disp-d2
+display-field max-disp-d3
+display-field max-disp-d4
+\ 
+\ display digits, for minimum and maximum.  Yes, these should probably be arrays
+0         min-disp-d0   field!
+0         min-disp-d1   field!
+0         min-disp-d2   field!
+0         min-disp-d3   field!
+0         min-disp-d4   field!
+sign-plus min-disp-sign field!
+\ 
+0         max-disp-d0   field!
+0         max-disp-d1   field!
+0         max-disp-d2   field!
+0         max-disp-d3   field!
+0         max-disp-d4   field!
+sign-plus max-disp-sign field!
 
 dp_lg      variable dp-font
 digit_lg   variable digit-font
@@ -766,6 +804,55 @@ create pointer-colors
 
 \ --------------------------------------------------------------------
 
+bar-y 15 + constant min-max-y
+
+\ show min/max values on either size of the Fluke logo
+: display-min/max-digits  ( d4 d3 d2 d1 d0 signdigit x color -- )
+    dp_small      dp-font !
+    digit_sm      digit-font !
+    symbolSignSm  fnt-select
+
+    ( color ) tft-fg !
+    ( x ) min-max-y fnt-goto
+
+    \ render sign
+    dup ( signdigit )
+    char-none = if drop -1 then fnt-drawchar
+    \ render digits
+    digit-font @   fnt-select
+    dispDigit   \ d0
+    dispDigit   \ d1
+    dispDigit   \ d2
+    dispDigit   \ d3
+    dispDigit   \ d4
+;
+
+: display-min-max
+    min-disp-d4 field@ min-disp-d3 field@ min-disp-d2 field@ min-disp-d1 field@ min-disp-d0 field@ min-disp-sign field@
+    0 ( x position )
+    color-min
+    display-min/max-digits
+
+    max-disp-d4 field@ max-disp-d3 field@ max-disp-d2 field@ max-disp-d1 field@ max-disp-d0 field@ max-disp-sign field@
+    tft-width @ 2/ splashFlukeX 2/ - splashFlukeX + 1+ ( x-position )
+    color-max
+    display-min/max-digits
+
+    \  fnt-height is the size of the small number font last selected
+    50   min-max-y fnt-height @ + 4 + fnt-goto
+
+    status-font @ fnt-select
+    color-min tft-fg !
+    s" MIN" fnt-puts
+
+    fnt-getpos swap drop ( x )
+    tft-width @ 2/ splashFlukeX 2/ - splashFlukeX + 51 + ( x-position )  swap fnt-goto
+    color-max tft-fg !
+    s" MAX" fnt-puts
+;
+
+\ --------------------------------------------------------------------
+
 \ render the entire display
 \
 \ Right now, we simply render all of the visible display
@@ -781,6 +868,9 @@ create pointer-colors
     display-Z
     display-Rel
     display-bar-graph
+    debugging-modes @ 0= if
+        display-min-max  ( min/max overlaps debugging display )
+    then
 ;
 
 \ reset/clear display
@@ -929,6 +1019,76 @@ create pointer-colors
     then
 ;
 
+\ after switching modes and resetting, length of time to wait for intial readings to settle
+4 variable min-max-settle
+
+\ reset min/max comparison values to outside of display counts
+: reset-min-max
+    -9999999 max-disp-value !
+     9999999 min-disp-value !
+           4 min-max-settle !
+ 
+    char-none max-disp-sign field!
+    char-none max-disp-d0   field!
+    char-none max-disp-d1   field!
+    char-none max-disp-d2   field!
+    char-none max-disp-d3   field!
+    char-none max-disp-d4   field!
+
+    char-none min-disp-sign field!
+    char-none min-disp-d0   field!
+    char-none min-disp-d1   field!
+    char-none min-disp-d2   field!
+    char-none min-disp-d3   field!
+    char-none min-disp-d4   field!
+;
+
+\ relies on unscaled-display-value having been computed
+: compute-min-max
+    \ if range or function has changed since we last looked, reset
+    \ min/max values
+    fluke_range @ last_range @ <>  fluke_func @ last_func @ <> or if
+        reset-min-max
+        fluke_range @ last_range !
+        fluke_func @  last_func  !
+    then
+
+    unscaled-display-value @
+    d0 @ $0c and 8 = if   \ is negative sign set?
+        negate disp-value !
+    else
+        disp-value !
+    then
+
+    \ check for new min/max values and update so long as not settling down
+    disp-value @  min-disp-value @ <  min-max-settle @ 0= and if
+        \ new value is smaller
+        disp-value @  min-disp-value !
+        disp-sign field@  min-disp-sign field!
+        disp-d0 field@    min-disp-d0 field!
+        disp-d1 field@    min-disp-d1 field!
+        disp-d2 field@    min-disp-d2 field!
+        disp-d3 field@    min-disp-d3 field!
+        disp-d4 field@    min-disp-d4 field!
+    then
+
+    disp-value @  max-disp-value @  >  min-max-settle @ 0= and if
+        \ new value is larger
+        disp-value @  max-disp-value !
+        disp-sign field@  max-disp-sign field!
+        disp-d0 field@    max-disp-d0 field!
+        disp-d1 field@    max-disp-d1 field!
+        disp-d2 field@    max-disp-d2 field!
+        disp-d3 field@    max-disp-d3 field!
+        disp-d4 field@    max-disp-d4 field!
+    then
+
+    \ decrement settle counter if active
+    min-max-settle @ 0<> if
+        -1 min-max-settle +!
+    then
+;
+
 
 : compute-update
     0 func-range-error !
@@ -936,6 +1096,7 @@ create pointer-colors
     compute-main-display
     compute-bar-length
     compute-relative-display
+    compute-min-max
 ;
 
 0 variable display-update-time
@@ -1046,12 +1207,17 @@ create pointer-colors
     [char] | fnt-drawchar
 ;
 
+: status-min-max
+    \ nothing for now
+;
+
 : status-line
     status-font @ fnt-select
-    status-memory
-
-    0 222 fnt-goto
     WHITE tft-fg !
+    status-memory
+    status-min-max
+    
+    0 222 fnt-goto
     status-func.
     status-range.
     \ status-digits.
@@ -1104,7 +1270,7 @@ create pointer-colors
     micros display-cycle-start-micros !
     get-func-range-switches
     compute-update
-    display-update
+    display-Update
     micros display-cycle-end-micros !
 
     debugging-modes @ 0<> if status-line then
@@ -1127,6 +1293,7 @@ create pointer-colors
 : display-initialize
     display-Clear
     get-func-range-switches
+    reset-min-max
     compute-update
     display-Update
     fluke_func @ function_notREL and 0= if 1 debugging-modes bis! then
