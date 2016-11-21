@@ -28,9 +28,13 @@ testing cycles.
 
 This software and hardware configuration is targeted to a Maple Mini
 "clone" board commonly available on EBay, with an STM32F103CBT6
-device with 128KB of Flash and 64KB of RAM.  Deleting some of the
+device with 128KB of Flash and 20KB of RAM.  Deleting some of the
 debugging code (notably the disassembler) will enable it to fit in
-a smaller part with 64KB of Flash.
+a smaller part with 64KB of Flash.  There was really no serious attempt
+to squeeze this down into the smallest footprint possible.  Since there
+was plenty of flash space available, a bunch of debugging code is
+left in, as well as more fonts than strictly necessary, some multitasking
+code for future experimentation, etc.
 
 There is a binary file, named something like
 
