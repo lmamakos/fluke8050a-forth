@@ -415,7 +415,7 @@ $100 constant prefix-decimal-point
 YELLOW           variable color-disp-rel-fg-var  \ relative display number colors
 
 lightgrey constant color-status-line
-PURPLE   constant color-min
+CYAN     constant color-min
 RED      constant color-max
 MAGENTA  constant color-disp-over-range
 ORANGE   constant color-disp-high-voltage
@@ -813,11 +813,13 @@ bar-y 15 + constant min-max-y
     symbolSignSm  fnt-select
 
     ( color ) tft-fg !
-    ( x ) min-max-y fnt-goto
+    ( x ) 10 min-max-y + fnt-goto
 
     \ render sign
     dup ( signdigit )
     char-none = if drop -1 then fnt-drawchar
+    fnt-getpos drop min-max-y fnt-goto ( undo offset for small sign glyph )
+    
     \ render digits
     digit-font @   fnt-select
     dispDigit   \ d0
@@ -1284,7 +1286,7 @@ bar-y 15 + constant min-max-y
     WHITE tft-fg !   NAVY  tft-bg !
     splashFluke splashFlukeX splashFlukeY ( bitmap-addr x-size y-size )
     tft-width @ 2/ splashFlukeX 2/ -  ( x-position )
-    tft-height @ bar-y 5 + -  splashFlukeY - 2/  bar-y 5 + + ( y-position )
+    tft-height @ bar-y 20 + -  splashFlukeY - 2/  bar-y 20 + + ( y-position )
     bitmap
     tft-bg !
     tft-fg !
@@ -1333,7 +1335,6 @@ bar-y 15 + constant min-max-y
 ;
 
 : startup-screen-info
-    \ NAVY tft-bg !   ( can't be NAVY, looks too much like Windoze BSOD )
     16 10 0 mkcolor tft-bg !
     WHITE tft-fg !
     clear
