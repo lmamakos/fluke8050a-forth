@@ -4,7 +4,7 @@
 
     
  \ \ \ \ integer version number
-#87 variable version-revision
+#93 variable version-revision
 
  \ \ \ \ string varient of version number
 0 0 2variable version-rev
@@ -16,9 +16,9 @@
 0 0 2variable version-date
 
 : __set_version_stuff  
-  s" 87"             version-rev  2!
-  s" f32800afd6a0"   version-id   2! 
-  s" 2016-10-30"      version-date 2!
+  s" 93"             version-rev  2!
+  s" ce6756a08a6e"   version-id   2! 
+  s" 2016-11-21"      version-date 2!
 ;
 __set_version_stuff
 
