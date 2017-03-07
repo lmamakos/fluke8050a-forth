@@ -19,3 +19,5 @@ lib/                   - some potentiall reusble Forth libraries
 mlib/                  - Forth library files, based on Mecrisp distribution
 stm32loader.py         - Python file to load using STM32 serial bootloader
 upload.py              - Python file used with SecureCRT to load Forth code
+
+Join the chat at https://gitter.im/fluke8050a-forth/Lobby
